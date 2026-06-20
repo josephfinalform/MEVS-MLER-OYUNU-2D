@@ -51,13 +51,24 @@ def settings_ciz():
     if ui.btn(td, assets.GENISLIK//2+50, 235, 140, 40, assets.GT, assets.AGT, assets.NY if game.te_mi else assets.K):
         game.te_mi = not game.te_mi; pygame.display.toggle_fullscreen()
     game.ekran.blit(game.f.render(f"SES: {game.ayar['ses']}%", True, assets.B), (assets.GENISLIK//2-200, 310))
-    if ui.btn("-", assets.GENISLIK//2+10, 310, 50, 35, assets.GT, assets.AGT): game.ayar["ses"] = max(0, game.ayar["ses"]-10)
+    if ui.btn("-", assets.GENISLIK//2+10, 310, 50, 35, assets.GT, assets.AGT):
+        game.ayar["ses"] = max(0, game.ayar["ses"]-10)
+        audio.sk.set_volume(game.ayar["ses"]/100)
+        audio.ses_kanal.set_volume(game.ayar["ses"]/100)
+        audio.ses_kanal2.set_volume(game.ayar["ses"]/100)
     sl_x = assets.GENISLIK//2+70; sl_w = 200
     pygame.draw.rect(game.ekran, assets.GT, (sl_x, 325, sl_w, 10))
     pygame.draw.rect(game.ekran, assets.NM, (sl_x, 325, int(sl_w*game.ayar["ses"]/100), 10))
     if pygame.Rect(sl_x, 315, sl_w, 30).collidepoint(pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
         game.ayar["ses"] = max(0, min(100, int((pygame.mouse.get_pos()[0]-sl_x)/sl_w*100)))
-    if ui.btn("+", sl_x+sl_w+10, 310, 50, 35, assets.GT, assets.AGT): game.ayar["ses"] = min(100, game.ayar["ses"]+10)
+        audio.sk.set_volume(game.ayar["ses"]/100)
+        audio.ses_kanal.set_volume(game.ayar["ses"]/100)
+        audio.ses_kanal2.set_volume(game.ayar["ses"]/100)
+    if ui.btn("+", sl_x+sl_w+10, 310, 50, 35, assets.GT, assets.AGT):
+        game.ayar["ses"] = min(100, game.ayar["ses"]+10)
+        audio.sk.set_volume(game.ayar["ses"]/100)
+        audio.ses_kanal.set_volume(game.ayar["ses"]/100)
+        audio.ses_kanal2.set_volume(game.ayar["ses"]/100)
     game.ekran.blit(game.f.render("KONTROLLER", True, assets.B), (assets.GENISLIK//2-200, 380))
     for i, k in enumerate(["OK SAG/SOL - Hareket", "SPACE - Zipla", "ESC - Menuye don", "R - Yeniden baslat"]):
         game.ekran.blit(game.fk.render(k, True, assets.AGT), (assets.GENISLIK//2-200, 415+i*25))
@@ -83,6 +94,14 @@ def env_ciz():
             pygame.draw.rect(game.ekran, assets.ALTIN if s else assets.AGT, kr2, 2, border_radius=8)
             game.ekran.blit(game.f.render(assets.KOSTUMLER[k]["i"], True, assets.B), (kx+10, ky+10))
             game.ekran.blit(game.fk.render(assets.KOSTUMLER[k]["a"], True, assets.AGT), (kx+10, ky+45))
+            # Karakter onizleme
+            r2 = kr2.collidepoint(pygame.mouse.get_pos())
+            if s or r2:
+                ox2 = kx + 170
+                oy2 = ky + 50
+                pygame.draw.circle(game.ekran, assets.MM, (ox2, oy2-8), 8)
+                pygame.draw.rect(game.ekran, assets.KOSTUMLER[k]["r"], (ox2-6, oy2, 12, 30))
+                pygame.draw.circle(game.ekran, assets.KOSTUMLER[k]["r"], (ox2, oy2-10), 6)
             if kr2.collidepoint(pygame.mouse.get_pos()) and game.ft:
                 game.aktif_k = k if game.aktif_k != k else None
     if ui.btn("GERI", assets.GENISLIK//2-100, 580, 200, 50, assets.GT, assets.AGT, assets.NP): return "menu"

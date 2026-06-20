@@ -33,3 +33,23 @@ z_can = {"kolay": 7, "orta": 5, "zor": 3}
 z_dh = {"kolay": 0.5, "orta": 1.0, "zor": 1.5}
 z_yc = {"kolay": 0.45, "orta": 0.5, "zor": 0.6}
 z_zg = {"kolay": -13, "orta": -13, "zor": -12}
+
+BOSS_HP = {"kolay": 8, "orta": 12, "zor": 18}
+BOSS_SPD = {"kolay": 1.5, "orta": 2.5, "zor": 3.5}
+BOSS_ATK_CD = {"kolay": 90, "orta": 60, "zor": 40}
+
+WP_DATA = {
+    "ilkbahar": {"i": "Cicek Kalasnikof", "r": C1, "dmg": 1, "spd": 10, "a": 25, "cd": 7, "s": "cicek"},
+    "yaz": {"i": "Gunes Tufegi", "r": ALTIN, "dmg": 2, "spd": 10, "a": 25, "cd": 7, "s": "cizgi"},
+    "sonbahar": {"i": "Yaprak Firlatan", "r": YP, "dmg": 2, "spd": 8, "a": 25, "cd": 7, "s": "yaprak"},
+    "kis": {"i": "Kar Topu", "r": KR, "dmg": 3, "spd": 7, "a": 25, "cd": 7, "s": "kar"},
+}
+
+BOSS_ADI = {
+    "ilkbahar": "CICEK CANAVARI",
+    "yaz": "GUNES DEV",
+    "sonbahar": "YAPRAK FIRTINASI",
+    "kis": "KAR KRALI",
+}
+
+MS = ms

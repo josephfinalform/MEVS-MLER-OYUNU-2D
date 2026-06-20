@@ -1,3 +1,4 @@
+import math
 import pygame
 import assets
 import game
@@ -6,7 +7,7 @@ def btn(m, x, y, w, h, n, u, yr=assets.B):
     mx, my = pygame.mouse.get_pos()
     r = pygame.Rect(x, y, w, h)
     u2 = r.collidepoint(mx, my)
-    pygame.draw.rect(game.ekran, (0, 0, 0, 60), (x+3, y+3, w, h), border_radius=8)
+    pygame.draw.rect(game.ekran, (10, 10, 20), (x+3, y+3, w, h), border_radius=8)
     pygame.draw.rect(game.ekran, u if u2 else n, r, border_radius=8)
     pygame.draw.rect(game.ekran, yr, r, 2, border_radius=8)
     t = game.fm.render(m, True, yr)
@@ -17,21 +18,28 @@ def ikon(x, y, s, rn=assets.B):
     mx, my = pygame.mouse.get_pos()
     r = pygame.Rect(x, y, 36, 36)
     u = r.collidepoint(mx, my)
-    pygame.draw.circle(game.ekran, assets.AGT if u else assets.GT, (x+18, y+18), 20)
-    pygame.draw.circle(game.ekran, rn, (x+18, y+18), 20, 2)
+    pygame.draw.circle(game.ekran, assets.AGT if u else (30, 30, 50), (x+18, y+18), 18)
+    pygame.draw.circle(game.ekran, rn, (x+18, y+18), 18, 2)
+    cx, cy = x+18, y+18
     if s == "A":
-        pygame.draw.circle(game.ekran, rn, (x+18, y+18), 8, 2)
-        pygame.draw.line(game.ekran, rn, (x+18, y+8), (x+18, y+10), 2)
-        pygame.draw.line(game.ekran, rn, (x+8, y+18), (x+10, y+18), 2)
-        pygame.draw.line(game.ekran, rn, (x+26, y+18), (x+28, y+18), 2)
+        for a in range(6):
+            a2 = a * 1.047
+            pygame.draw.line(game.ekran, rn, (cx+int(math.cos(a2)*9), cy+int(math.sin(a2)*9)), (cx+int(math.cos(a2)*14), cy+int(math.sin(a2)*14)), 4)
+        pygame.draw.circle(game.ekran, (30, 30, 50), (cx, cy), 7)
     elif s == "R":
-        pygame.draw.line(game.ekran, rn, (x+12, y+12), (x+22, y+12), 3)
-        pygame.draw.line(game.ekran, rn, (x+12, y+12), (x+12, y+22), 3)
-        pygame.draw.line(game.ekran, rn, (x+22, y+12), (x+22, y+22), 3)
-        pygame.draw.line(game.ekran, rn, (x+12, y+22), (x+22, y+22), 3)
-        pygame.draw.polygon(game.ekran, rn, [(x+24, y+14), (x+28, y+18), (x+24, y+22)])
+        pygame.draw.arc(game.ekran, rn, (cx-7, cy-7, 14, 14), 0.5, 5.5, 3)
+        ex = cx + int(7 * math.cos(5.5))
+        ey = cy + int(7 * math.sin(5.5))
+        tx, ty = -math.sin(5.5), math.cos(5.5)
+        pygame.draw.line(game.ekran, rn, (ex, ey), (ex+int(tx*3+ty*2), ey+int(ty*3-tx*2)), 2)
+        pygame.draw.line(game.ekran, rn, (ex, ey), (ex+int(tx*3-ty*2), ey+int(ty*3+tx*2)), 2)
     elif s == "M":
-        pygame.draw.rect(game.ekran, rn, (x+10, y+16, 16, 12), 2)
-        pygame.draw.polygon(game.ekran, rn, [(x+9, y+18), (x+18, y+10), (x+27, y+18)])
-        pygame.draw.rect(game.ekran, rn, (x+16, y+22, 4, 6))
+        pygame.draw.polygon(game.ekran, rn, [(cx, cy-10), (cx-10, cy), (cx+10, cy)])
+        pygame.draw.rect(game.ekran, rn, (cx-8, cy, 16, 14))
+        pygame.draw.rect(game.ekran, rn, (cx-3, cy+6, 6, 8))
+    elif s == "S":
+        pygame.draw.polygon(game.ekran, rn, [(cx-3, cy-6), (cx+6, cy-10), (cx+6, cy+10), (cx-3, cy+6)])
+        for li in range(2):
+            lx = cx + 7 + li*4
+            pygame.draw.line(game.ekran, rn, (lx, cy-5), (lx, cy+5), 2)
     return u and game.ft
