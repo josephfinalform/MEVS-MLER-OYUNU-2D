@@ -192,7 +192,7 @@ def _ciz_dekorasyon(p, idx):
             if fx > x + w - 10:
                 break
             if (tohum + fi * 11) % 7 < 4:
-                c_renk = [(255, 100, 150), (255, 255, 100), (200, 100, 255)][fi % 3]
+                c_renk = [(255, 255, 240), (255, 255, 100), (200, 100, 255)][fi % 3]
                 # Sap
                 pygame.draw.line(game.ekran, (60, 180, 60), (fx, y - 2), (fx, y - 12), 2)
                 # Yaprak
@@ -208,9 +208,10 @@ def _ciz_dekorasyon(p, idx):
             if (tohum + bi * 17) % 5 < 2:
                 pygame.draw.ellipse(game.ekran, (50, 150, 50), (bx, y - 10, 16, 12))
                 pygame.draw.ellipse(game.ekran, (80, 180, 80), (bx + 2, y - 10, 16, 12))
-                # Cicekli cali
+                # Cicekli cali (beyaz cicek)
                 if (tohum + bi * 3) % 5 < 2:
-                    pygame.draw.circle(game.ekran, (255, 150, 200), (bx + 8, y - 14), 3)
+                    pygame.draw.circle(game.ekran, (255, 255, 230), (bx + 6, y - 14), 3)
+                    pygame.draw.circle(game.ekran, (255, 255, 200), (bx + 6, y - 14), 1)
 
     elif m == "yaz":
         # Uzun otlar
@@ -390,7 +391,7 @@ def _ciz_arka_plan():
                     vy = vj * 8
                     pygame.draw.line(game.ekran, (60, 160, 60), (vx, vy), (vx + int(math.sin(sz * 0.02 + vj) * 3), vy + 8), 2)
                     if vj == 1 and (vi * 7) % 5 < 2:
-                        pygame.draw.circle(game.ekran, (255, 150, 200), (vx + int(math.sin(sz * 0.02 + vj) * 3), vy + 8), 3)
+                        pygame.draw.circle(game.ekran, (255, 255, 200), (vx + int(math.sin(sz * 0.02 + vj) * 3), vy + 8), 3)
         # Uzaktan ucusan kelebekler
         for bi in range(4):
             bx = (bi * 257 + int(sz * 0.3 * (bi % 2 * 2 - 1))) % z

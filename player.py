@@ -54,39 +54,6 @@ def ciz_krk(x, y, yn, yy=0):
     sx = x
     sy = y
 
-    sac_d = math.sin(fizik.sf) * 3 + math.sin(fizik.sf * 0.7) * 2
-    sac_r = (255, 130, 170)
-    sac_r2 = (220, 100, 140)
-    sac_r3 = (255, 180, 210)
-
-    # === SAÇ (detayli) ===
-    # Arka sac - ense hizasinda orgu
-    for i in range(4):
-        fy = sy - 38 + i * 8
-        pygame.draw.ellipse(game.ekran, sac_r2, (sx - 6 + math.sin(i)*2, fy, 12, 16 + abs(i - 1) * 5))
-    # At kuyrugu/orgu - kalin ve detayli
-    for i in range(8):
-        fy = sy - 14 + i * 5
-        ofs = math.sin(game.sz * 0.5 + i * 0.3) * 2
-        w = max(2, 5 - i * 0.4)
-        pygame.draw.line(game.ekran, sac_r, (sx + int(ofs), fy), (sx + 1 + int(ofs * 1.5), fy + 5), int(w))
-        pygame.draw.line(game.ekran, sac_r3, (sx + int(ofs) + 1, fy + 1), (sx + 1 + int(ofs * 1.5) + 1, fy + 6), 1)
-
-    # On sac - ortadan ayrilmis, katmanli
-    for layer in range(3):
-        a = 0.3 + layer * 0.2
-        for i in range(2):
-            ofs = -14 - i * 5 + layer * 1
-            renk = sac_r if layer == 1 else (sac_r2 if layer == 0 else sac_r3)
-            pygame.draw.ellipse(game.ekran, renk, (sx + ofs + sac_d * a, sy - 50 + i * 4 + layer * 2, 10 - layer, 34 - i * 4 - layer * 2))
-        for i in range(2):
-            ofs = 16 + i * 3 - layer * 1
-            renk = sac_r if layer == 1 else (sac_r2 if layer == 0 else sac_r3)
-            pygame.draw.ellipse(game.ekran, renk, (sx + ofs + sac_d * a, sy - 50 + i * 4 + layer * 2, 10 - layer, 34 - i * 4 - layer * 2))
-    # Ust sac (tepe) - katmanli
-    pygame.draw.ellipse(game.ekran, sac_r2, (sx - 16, sy - 56, 32, 16))
-    pygame.draw.ellipse(game.ekran, sac_r, (sx - 14, sy - 54, 28, 14))
-    pygame.draw.ellipse(game.ekran, sac_r3, (sx - 10, sy - 52, 20, 10))
     # === BAŞ (ince oval yuz, detayli) ===
     pygame.draw.ellipse(game.ekran, assets.TEN, (sx - 13, sy - 46, 26, 36))
     # Yanak ve elmacik kemigi
@@ -309,7 +276,7 @@ def ciz_krk(x, y, yn, yy=0):
             pygame.draw.rect(game.ekran, (80, 110, 80), (w_x, w_y - 3, 30 * w_yon, 6), 1)
             # Namlu ucu - cicek
             pygame.draw.rect(game.ekran, (100, 140, 100), (w_x + 28 * w_yon, w_y - 4, 6 * w_yon, 8))
-            pygame.draw.circle(game.ekran, (255, 100, 150), (w_x + 31 * w_yon, w_y), 4)
+            pygame.draw.circle(game.ekran, (255, 220, 180), (w_x + 31 * w_yon, w_y), 4)
             pygame.draw.circle(game.ekran, (255, 200, 50), (w_x + 31 * w_yon, w_y), 2)
             # Receiver
             pygame.draw.rect(game.ekran, (50, 70, 50), (w_x - 4 * w_yon, w_y - 5, 12 * w_yon, 10))
@@ -327,7 +294,7 @@ def ciz_krk(x, y, yn, yy=0):
             for ci in range(3):
                 cx2 = w_x + (ci * 10 - 5) * w_yon
                 cy2 = w_y - 6 + ci * 6
-                pygame.draw.circle(game.ekran, (255, 150, 200), (int(cx2), int(cy2)), 3)
+                pygame.draw.circle(game.ekran, (255, 220, 200), (int(cx2), int(cy2)), 3)
                 pygame.draw.circle(game.ekran, (255, 200, 50), (int(cx2), int(cy2)), 1)
             # Sarmaşık
             for vi in range(4):
@@ -454,14 +421,6 @@ def ciz_krk(x, y, yn, yy=0):
             sprite = pygame.transform.flip(CHAR, True, False)
         # Yere gore konumlandir (ayaklar collision altinda)
         game.ekran.blit(sprite, (sx - sprite.get_width()//2, sy + 25 - sprite.get_height()))
-
-    # Idle aurasi (mavi parlaklik)
-    aura_r = 28 + int(math.sin(game.sz * 0.5) * 4)
-    aura_s = pygame.Surface((aura_r*2, aura_r*2), pygame.SRCALPHA)
-    pygame.draw.circle(aura_s, (100, 150, 255, 20), (aura_r, aura_r), aura_r)
-    game.ekran.blit(aura_s, (sx - aura_r, sy + 20 - aura_r))
-    pygame.draw.circle(aura_s, (150, 200, 255, 10), (aura_r, aura_r), aura_r - 5)
-    game.ekran.blit(aura_s, (sx - aura_r, sy + 20 - aura_r))
 
     # Idle parcaciklari (dururken sihirli kivilcim)
     if abs(game.hx) < 0.5 and game.yr:
