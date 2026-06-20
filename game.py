@@ -32,9 +32,11 @@ dsm = []
 mpl = []
 ptk = []
 bullets = []
+fireballs = []
 boss_btl = []
+boss_muh = []
 
-rnd_max = 3
+rnd_max = 16
 boss_sv = False
 
 cp_x = 100
@@ -42,16 +44,17 @@ cp_y = 100
 
 weapon = None
 ammo = 0
-max_ammo = 999
+max_ammo = 100
 wp_lv = 1
 shoot_cd = 0
+fire_cd = 0
 
 hiz_t = 0
 kalkan_t = 0
 cift_zipla_t = 0
+cift_zipla_kalan = 0
 miknatis_t = 0
 kalp_t = 0
-dj_k = False
 
 boss_hp = 0
 boss_max_hp = 0
@@ -59,10 +62,19 @@ boss_timer = 0
 boss_ptrn = 0
 boss_dir = 1
 boss_vx = 2
+boss_x = 0
+boss_y = 0
 boss_atk_cd = 0
 boss_lazer_t = 0
 boss_minyon_t = 0
 boss_dalga_t = 0
+boss_hedef_x = 0
+boss_hedef_y = 0
+boss_hareket_mod = 0
+boss_ozel_yetenek_cd = 0
+boss_ozel_efekt = []
+boss_hedefle = False
+boss_yon_degis = 0
 
 sh = 0
 sz = 0

@@ -63,40 +63,21 @@ def ark_ciz():
             y2 = 350 + math.sin(i*0.02 + game.sz*0.15) * 20
             pygame.draw.ellipse(game.ekran, (70, 150, 80), (i+30, y2, 140, 50))
             pygame.draw.ellipse(game.ekran, (80, 170, 100), (i+30, y2+3, 140, 50), 1)
-        for _ in range(6):
-            cx = random.randint(0, assets.GENISLIK)
-            cy = random.randint(0, 200)
-            pygame.draw.circle(game.ekran, (255, 200, 255), (cx, cy), random.randint(2, 4))
-            pygame.draw.circle(game.ekran, (255, 255, 200), (cx, cy+1), 1)
     elif m == "yaz":
         for i in range(0, assets.GENISLIK, 100):
             h2 = 100 + math.sin(i*0.03 + game.sz*0.1) * 40
             pygame.draw.polygon(game.ekran, (180, 150, 80), [(i, 400+h2), (i+80, 300+h2), (i+160, 400+h2)])
             pygame.draw.polygon(game.ekran, (200, 170, 100), [(i, 400+h2), (i+80, 300+h2), (i+160, 400+h2)], 1)
-        for _ in range(8):
-            sx = random.randint(0, assets.GENISLIK)
-            sy = random.randint(0, 250)
-            pygame.draw.circle(game.ekran, assets.ALTIN, (sx, sy), random.randint(1, 3))
     elif m == "sonbahar":
         for i in range(0, assets.GENISLIK, 180):
             y2 = 250 + math.sin(i*0.015 + game.sz*0.12) * 25
             pygame.draw.polygon(game.ekran, (100, 60, 30), [(i, 350), (i+90, y2), (i+180, 350)])
             pygame.draw.polygon(game.ekran, (130, 80, 40), [(i, 350), (i+90, y2), (i+180, 350)], 1)
-        for _ in range(10):
-            lx = random.randint(0, assets.GENISLIK)
-            ly = random.randint(0, 200)
-            pygame.draw.ellipse(game.ekran, (180, 120, 30), (lx, ly, 6, 3))
     elif m == "kis":
         for i in range(0, assets.GENISLIK, 250):
             y2 = 300 + math.sin(i*0.02 + game.sz*0.08) * 20
             pygame.draw.polygon(game.ekran, (150, 180, 200), [(i, 400), (i+125, y2), (i+250, 400)])
             pygame.draw.polygon(game.ekran, (180, 200, 220), [(i, 400), (i+125, y2), (i+250, 400)], 1)
-        for _ in range(5):
-            cx = random.randint(0, assets.GENISLIK)
-            cy = random.randint(0, 200)
-            pygame.draw.circle(game.ekran, (200, 220, 240), (cx, cy), random.randint(3, 6))
-            pygame.draw.circle(game.ekran, (220, 240, 255), (cx-1, cy-1), 2)
-
     # Hava efektleri (yagmur, kar, yaprak, kum)
     game.hava_efektleri = [h for h in game.hava_efektleri if h["o"] > 0]
     while len(game.hava_efektleri) < 30:

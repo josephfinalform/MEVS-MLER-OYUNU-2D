@@ -42,8 +42,8 @@ def settings_ciz():
     t = game.fb.render("AYARLAR", True, assets.NM)
     game.ekran.blit(t, (assets.GENISLIK//2 - t.get_width()//2, 50))
     game.ekran.blit(game.f.render("ZORLUK", True, assets.B), (assets.GENISLIK//2-200, 130))
-    for i, z in enumerate(["kolay", "orta", "zor"]):
-        sx = assets.GENISLIK//2 - 200 + i*140
+    for i, z in enumerate(["kolay", "orta", "zor", "imkansiz"]):
+        sx = assets.GENISLIK//2 - 280 + i*140
         s = game.ayar["z"] == z
         if ui.btn(z.upper(), sx, 165, 120, 40, assets.MM if s else assets.GT, assets.AGT): game.ayar["z"] = z
     game.ekran.blit(game.f.render("TAM EKRAN", True, assets.B), (assets.GENISLIK//2-200, 240))
@@ -70,7 +70,7 @@ def settings_ciz():
         audio.ses_kanal.set_volume(game.ayar["ses"]/100)
         audio.ses_kanal2.set_volume(game.ayar["ses"]/100)
     game.ekran.blit(game.f.render("KONTROLLER", True, assets.B), (assets.GENISLIK//2-200, 380))
-    for i, k in enumerate(["OK SAG/SOL - Hareket", "SPACE - Zipla", "ESC - Menuye don", "R - Yeniden baslat"]):
+    for i, k in enumerate(["OK SAG/SOL - Hareket", "SPACE - Zipla", "SAG TIK - Alev Topu", "ESC - Menuye don", "R - Yeniden baslat"]):
         game.ekran.blit(game.fk.render(k, True, assets.AGT), (assets.GENISLIK//2-200, 415+i*25))
     if ui.btn("GERI", assets.GENISLIK//2-100, 550, 200, 50, assets.GT, assets.AGT, assets.NP): return "menu"
     return "settings"
