@@ -1,7 +1,22 @@
 import math
+import random
 import pygame
 import assets
 import game
+import particles
+
+CHAR = None
+_onceki_oy = 0
+_onceki_yr = True
+
+def _yukle_char():
+    global CHAR
+    if CHAR is None:
+        try:
+            img = pygame.image.load("char.png").convert_alpha()
+            CHAR = img
+        except:
+            CHAR = None
 
 MEME_K = 0.3; MEME_D = 0.6; GOT_K = 0.4; GOT_D = 0.7
 
@@ -72,9 +87,6 @@ def ciz_krk(x, y, yn, yy=0):
     pygame.draw.ellipse(game.ekran, sac_r2, (sx - 16, sy - 56, 32, 16))
     pygame.draw.ellipse(game.ekran, sac_r, (sx - 14, sy - 54, 28, 14))
     pygame.draw.ellipse(game.ekran, sac_r3, (sx - 10, sy - 52, 20, 10))
-    # Sac parlakligi
-    pygame.draw.ellipse(game.ekran, (255, 220, 240, 60), (sx - 6, sy - 52, 12, 8))
-
     # === BAŞ (ince oval yuz, detayli) ===
     pygame.draw.ellipse(game.ekran, assets.TEN, (sx - 13, sy - 46, 26, 36))
     # Yanak ve elmacik kemigi
@@ -267,7 +279,11 @@ def ciz_krk(x, y, yn, yy=0):
     pygame.draw.line(game.ekran, (140, 90, 55), (sag_b_x - 1, sy + 38 + sagk), (sag_b_x + 5, sy + 38 + sagk), 1)
 
     # === KOLLAR ===
+    wd_cd = assets.WP_DATA[game.mv]["cd"] if game.weapon else 10
+    ates_geri_tepme = (wd_cd - game.shoot_cd) / wd_cd if game.shoot_cd > 0 else 0
+    ates_geri_tepme = max(0, min(1, ates_geri_tepme))
     kol_sag = math.sin(game.sz * 6) * 3 if abs(game.hx) > 1 else 0
+    kol_sag += ates_geri_tepme * 8 * yon
     if game.weapon:
         # Gömlek kollu kol
         pygame.draw.line(game.ekran, (240, 235, 225), (sx - 15, sy - 8), (sx - 28 + kol_sag, sy + 2), 5)
@@ -427,6 +443,51 @@ def ciz_krk(x, y, yn, yy=0):
         # Manşet
         pygame.draw.line(game.ekran, (220, 215, 205), (sx - 21 + kol_sag, sy + 4), (sx - 21 + kol_sag, sy + 8), 2)
         pygame.draw.line(game.ekran, (220, 215, 205), (sx + 21 - kol_sag, sy + 4), (sx + 21 - kol_sag, sy + 8), 2)
+
+    # === WIZARD SPRITE + EFECTLER ===
+    _yukle_char()
+    global _onceki_oy, _onceki_yr
+
+    if CHAR:
+        sprite = CHAR
+        if yon < 0:
+            sprite = pygame.transform.flip(CHAR, True, False)
+        # Yere gore konumlandir (ayaklar collision altinda)
+        game.ekran.blit(sprite, (sx - sprite.get_width()//2, sy + 25 - sprite.get_height()))
+
+    # Idle aurasi (mavi parlaklik)
+    aura_r = 28 + int(math.sin(game.sz * 0.5) * 4)
+    aura_s = pygame.Surface((aura_r*2, aura_r*2), pygame.SRCALPHA)
+    pygame.draw.circle(aura_s, (100, 150, 255, 20), (aura_r, aura_r), aura_r)
+    game.ekran.blit(aura_s, (sx - aura_r, sy + 20 - aura_r))
+    pygame.draw.circle(aura_s, (150, 200, 255, 10), (aura_r, aura_r), aura_r - 5)
+    game.ekran.blit(aura_s, (sx - aura_r, sy + 20 - aura_r))
+
+    # Idle parcaciklari (dururken sihirli kivilcim)
+    if abs(game.hx) < 0.5 and game.yr:
+        if random.random() < 0.04:
+            px = sx + random.randint(-18, 18)
+            py = sy + 10 + random.randint(-20, 5)
+            renk = random.choice([(100, 150, 255), (150, 200, 255), (200, 230, 255)])
+            particles.ptk_ekle(px, py, renk, 1)
+
+    # Kosma tozu
+    if game.yr and abs(game.hx) > 1.5:
+        if random.random() < 0.12:
+            particles.ptk_ekle(sx + random.randint(-6, 6), sy + 22, (180, 180, 200), 2)
+
+    # Yere inme efekti
+    if not _onceki_yr and game.yr:
+        for _ in range(5):
+            particles.ptk_ekle(sx + random.randint(-10, 10), sy + 22, (180, 200, 255), 2)
+        particles.ptk_patlatma(sx, sy + 22, (180, 200, 255), 6, 3)
+
+    # Havada ucus parcacigi
+    if not game.yr and random.random() < 0.06:
+        particles.ptk_ekle(sx + random.randint(-8, 8), sy + random.randint(-5, 15), (150, 200, 255), 1)
+
+    _onceki_oy = game.oy
+    _onceki_yr = game.yr
 
     # MEVSIM KOSTUMLERI (aksesuar olarak)
     if game.aktif_k == "sonbahar":

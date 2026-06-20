@@ -176,6 +176,146 @@ def _ciz_platform_kenar(p, rnk, b):
         if (cx2 * 5 + cy2 * 7) % 10 < 4:
             pygame.draw.line(game.ekran, b["grass"], (cx2, cy2), (cx2 + ((cx2 * 3) % 5 - 2), cy2 - ((cy2 * 7) % 5 + 4)), 2)
 
+def _ciz_dekorasyon(p, idx):
+    if idx == 0:
+        return
+    b = assets.BIOME[game.mv]
+    x, y, w = p.x, p.y, p.w
+    m = game.mv
+    sz = game.sz
+    tohum = x * 7 + y * 13 + idx * 31
+
+    if m == "ilkbahar":
+        # Cicekler (3 renk)
+        for fi in range(w // 25):
+            fx = x + 10 + fi * 25 + (tohum + fi * 7) % 15
+            if fx > x + w - 10:
+                break
+            if (tohum + fi * 11) % 7 < 4:
+                c_renk = [(255, 100, 150), (255, 255, 100), (200, 100, 255)][fi % 3]
+                # Sap
+                pygame.draw.line(game.ekran, (60, 180, 60), (fx, y - 2), (fx, y - 12), 2)
+                # Yaprak
+                pygame.draw.ellipse(game.ekran, (80, 200, 80), (fx - 2, y - 8, 4, 3))
+                # Cicek basi
+                pygame.draw.circle(game.ekran, c_renk, (fx, y - 14), 4)
+                pygame.draw.circle(game.ekran, (255, 255, 200), (fx, y - 14), 2)
+        # Cali
+        for bi in range(w // 60):
+            bx = x + 10 + bi * 60 + (tohum + bi * 13) % 20
+            if bx > x + w - 20:
+                break
+            if (tohum + bi * 17) % 5 < 2:
+                pygame.draw.ellipse(game.ekran, (50, 150, 50), (bx, y - 10, 16, 12))
+                pygame.draw.ellipse(game.ekran, (80, 180, 80), (bx + 2, y - 10, 16, 12))
+                # Cicekli cali
+                if (tohum + bi * 3) % 5 < 2:
+                    pygame.draw.circle(game.ekran, (255, 150, 200), (bx + 8, y - 14), 3)
+
+    elif m == "yaz":
+        # Uzun otlar
+        for gi in range(w // 20):
+            gx = x + 5 + gi * 20 + (tohum + gi * 5) % 10
+            if gx > x + w - 5:
+                break
+            if (tohum + gi * 7) % 4 < 2:
+                boy = 8 + (tohum + gi * 3) % 8
+                pygame.draw.line(game.ekran, (160, 190, 50), (gx, y - 2), (gx + ((gi * 7) % 5 - 2), y - 2 - boy), 2)
+                pygame.draw.line(game.ekran, (180, 210, 60), (gx - 1, y - 2), (gx - 1 + ((gi * 5) % 5 - 2), y - 2 - boy // 2), 1)
+        # Kaktus
+        for ki in range(w // 80):
+            kx = x + 10 + ki * 80 + (tohum + ki * 11) % 25
+            if kx > x + w - 15:
+                break
+            if (tohum + ki * 19) % 7 < 3:
+                pygame.draw.rect(game.ekran, (60, 140, 60), (kx, y - 20, 8, 20))
+                pygame.draw.rect(game.ekran, (80, 160, 80), (kx, y - 20, 8, 20), 1)
+                # Kollari
+                if (tohum + ki * 3) % 5 < 3:
+                    pygame.draw.rect(game.ekran, (60, 140, 60), (kx - 6, y - 14, 6, 4))
+                    pygame.draw.rect(game.ekran, (60, 140, 60), (kx + 8, y - 10, 6, 4))
+        # Kaya
+        for ri in range(w // 70):
+            rx = x + 15 + ri * 70 + (tohum + ri * 9) % 20
+            if rx > x + w - 15:
+                break
+            if (tohum + ri * 13) % 5 < 2:
+                pygame.draw.ellipse(game.ekran, (160, 150, 130), (rx, y - 4, 14, 8))
+                pygame.draw.ellipse(game.ekran, (180, 170, 150), (rx + 1, y - 3, 12, 6), 1)
+
+    elif m == "sonbahar":
+        # Dusen yapraklar (hareketli)
+        for li in range(w // 20):
+            lx2 = x + 5 + li * 15 + (tohum + li * 7 + int(math.sin(sz * 0.02 + li) * 5)) % 12
+            if lx2 > x + w - 5:
+                break
+            if (tohum + li * 5) % 3 < 1:
+                y_renk = [(200, 120, 30), (180, 80, 20), (220, 180, 50)][li % 3]
+                pygame.draw.ellipse(game.ekran, y_renk, (lx2, y - 2 - (li * 3) % 6, 5, 3))
+        # Mantar
+        for mi in range(w // 60):
+            mx = x + 10 + mi * 60 + (tohum + mi * 11) % 20
+            if mx > x + w - 10:
+                break
+            if (tohum + mi * 17) % 5 < 2:
+                # Sap
+                pygame.draw.rect(game.ekran, (220, 210, 190), (mx + 2, y - 8, 4, 8))
+                # Sap
+                pygame.draw.ellipse(game.ekran, (180, 80, 40), (mx, y - 12, 8, 6))
+                pygame.draw.ellipse(game.ekran, (200, 100, 50), (mx + 1, y - 12, 6, 4), 1)
+                # Benekler
+                if (tohum + mi * 3) % 5 < 3:
+                    pygame.draw.circle(game.ekran, (255, 240, 220), (mx + 2, y - 10), 1)
+                    pygame.draw.circle(game.ekran, (255, 240, 220), (mx + 5, y - 9), 1)
+        # Balkabagi
+        for pi in range(w // 90):
+            px2 = x + 15 + pi * 90 + (tohum + pi * 13) % 30
+            if px2 > x + w - 15:
+                break
+            if (tohum + pi * 7) % 7 < 2:
+                pygame.draw.ellipse(game.ekran, (220, 120, 40), (px2, y - 8, 10, 8))
+                pygame.draw.ellipse(game.ekran, (240, 140, 50), (px2 + 1, y - 7, 8, 6), 1)
+                pygame.draw.line(game.ekran, (80, 160, 80), (px2 + 5, y - 8), (px2 + 5, y - 12), 2)
+
+    elif m == "kis":
+        # Kar yiginlari
+        for si in range(w // 30):
+            sx3 = x + 5 + si * 30 + (tohum + si * 9) % 12
+            if sx3 > x + w - 10:
+                break
+            if (tohum + si * 11) % 4 < 2:
+                pygame.draw.ellipse(game.ekran, (230, 235, 245), (sx3, y - 4, 12, 6))
+                pygame.draw.ellipse(game.ekran, (245, 250, 255), (sx3 + 1, y - 4, 10, 4), 1)
+        # Buz kristali
+        for ci2 in range(w // 50):
+            cx3 = x + 10 + ci2 * 50 + (tohum + ci2 * 7) % 15
+            if cx3 > x + w - 8:
+                break
+            if (tohum + ci2 * 13) % 6 < 2:
+                cry_r = 4 + (tohum + ci2 * 3) % 3
+                pygame.draw.circle(game.ekran, (200, 230, 255), (cx3, y - 2 - cry_r), cry_r)
+                pygame.draw.circle(game.ekran, (220, 240, 255), (cx3, y - 2 - cry_r), cry_r, 1)
+                # Isin
+                if cry_r > 4:
+                    for ii in range(4):
+                        ia = ii * 1.57 + math.sin(sz * 0.01 + ci2) * 0.3
+                        ix = cx3 + int(math.cos(ia) * (cry_r + 2))
+                        iy = y - 2 - cry_r + int(math.sin(ia) * (cry_r + 2))
+                        pygame.draw.line(game.ekran, (220, 240, 255), (cx3, y - 2 - cry_r), (ix, iy), 1)
+        # Kardan adam mini
+        for ki in range(w // 100):
+            kx2 = x + 15 + ki * 100 + (tohum + ki * 17) % 35
+            if kx2 > x + w - 20:
+                break
+            if (tohum + ki * 11) % 7 < 2:
+                pygame.draw.circle(game.ekran, (230, 235, 245), (kx2 + 6, y - 8), 8)
+                pygame.draw.circle(game.ekran, (245, 250, 255), (kx2 + 6, y - 8), 8, 1)
+                pygame.draw.circle(game.ekran, (230, 235, 245), (kx2 + 6, y - 18), 6)
+                pygame.draw.circle(game.ekran, (245, 250, 255), (kx2 + 6, y - 18), 6, 1)
+                pygame.draw.circle(game.ekran, (20, 20, 20), (kx2 + 4, y - 20), 1)
+                pygame.draw.circle(game.ekran, (20, 20, 20), (kx2 + 8, y - 20), 1)
+                pygame.draw.line(game.ekran, (200, 100, 50), (kx2 + 6, y - 18), (kx2 + 10, y - 19), 1)
+
 def _ciz_arka_plan():
     b = assets.BIOME[game.mv]
     z = assets.GENISLIK
@@ -238,6 +378,64 @@ def _ciz_arka_plan():
             ry = h - 20 + rj * 8
             pygame.draw.line(game.ekran, b["deep_soil"], (rx + int(math.sin(rj * 0.5) * 10), ry), (rx + int(math.sin(rj * 0.5 + 0.3) * 10), ry + 8), 3)
 
+    # Biyom tabanli on plan dekorasyonlari (sarkik dallar, vs)
+    m = game.mv
+    sz = game.sz
+    if m == "ilkbahar":
+        # Sarkik sarmasiklar (ustten sarkan)
+        for vi in range(z // 60):
+            vx = vi * 60 + int(math.sin(vi * 2.3 + sz * 0.05) * 15)
+            if (vi * 13 + 7) % 7 < 3:
+                for vj in range(3):
+                    vy = vj * 8
+                    pygame.draw.line(game.ekran, (60, 160, 60), (vx, vy), (vx + int(math.sin(sz * 0.02 + vj) * 3), vy + 8), 2)
+                    if vj == 1 and (vi * 7) % 5 < 2:
+                        pygame.draw.circle(game.ekran, (255, 150, 200), (vx + int(math.sin(sz * 0.02 + vj) * 3), vy + 8), 3)
+        # Uzaktan ucusan kelebekler
+        for bi in range(4):
+            bx = (bi * 257 + int(sz * 0.3 * (bi % 2 * 2 - 1))) % z
+            by = 100 + bi * 40 + int(math.sin(sz * 0.02 + bi * 2) * 20)
+            if (bi * 7 + int(sz * 0.1)) % 10 < 6:
+                pygame.draw.ellipse(game.ekran, (255, 200, 100), (bx, by, 6, 3))
+                pygame.draw.ellipse(game.ekran, (255, 200, 100), (bx + 3, by, 6, 3))
+    elif m == "yaz":
+        # Sarkik kuru dallar
+        for bi in range(z // 80):
+            bx2 = bi * 80 + int(math.sin(bi * 1.7 + sz * 0.03) * 20)
+            if (bi * 11 + 5) % 5 < 2:
+                for bj in range(4):
+                    bx2 = bi * 80 + int(math.sin(bi * 1.7 + sz * 0.03 + bj) * 10)
+                    by2 = bj * 6
+                    pygame.draw.line(game.ekran, (100, 60, 30), (bx2, by2), (bx2 + int(math.sin(sz * 0.01 + bj) * 5), by2 + 6), 2)
+        # Sicak havada titresim
+        for hi in range(8):
+            hx = (hi * 157 + int(sz * 0.5)) % z
+            hy = 150 + hi * 30 + int(math.sin(sz * 0.03 + hi) * 15)
+            pygame.draw.circle(game.ekran, (255, 255, 200, 30), (hx, hy), 3 + int(math.sin(sz * 0.05 + hi) * 2))
+    elif m == "sonbahar":
+        # Orumcek aglari (sarkik)
+        for wi in range(z // 100):
+            wx = wi * 100 + int(math.sin(wi * 2.1 + sz * 0.02) * 20)
+            if (wi * 17 + 3) % 7 < 3:
+                for wj in range(5):
+                    wy = wj * 6
+                    pygame.draw.line(game.ekran, (180, 160, 140, 80), (wx, wy), (wx + int(math.sin(sz * 0.01 + wj) * 4), wy + 6), 1)
+                    if wj % 2 == 0:
+                        pygame.draw.line(game.ekran, (180, 160, 140, 60), (wx - 4, wy + 3), (wx + 4, wy + 3), 1)
+        # Kuslar (goc eden)
+        for bi in range(3):
+            bxi = (bi * 347 + int(sz * 0.4 * (1 if bi % 2 == 0 else -1))) % z
+            byi = 60 + bi * 25 + int(math.sin(sz * 0.01 + bi) * 10)
+            pygame.draw.arc(game.ekran, (40, 30, 20), (bxi, byi, 10, 5), 0, 3.14, 1)
+    elif m == "kis":
+        # Sarkik buz sarkitlari (ustten)
+        for ii in range(z // 40):
+            ix2 = ii * 40 + int(math.sin(ii * 1.3 + sz * 0.01) * 10)
+            if (ii * 19 + 11) % 5 < 2:
+                boy = 8 + (ii * 7) % 15
+                pygame.draw.polygon(game.ekran, (200, 230, 250), [(ix2, 0), (ix2 + 4, boy), (ix2 + 2, boy + 4), (ix2 - 2, boy + 4), (ix2 - 4, boy)])
+                pygame.draw.polygon(game.ekran, (220, 240, 255), [(ix2, 0), (ix2 + 4, boy), (ix2 + 2, boy + 4), (ix2 - 2, boy + 4), (ix2 - 4, boy)], 1)
+
 def platform_ciz():
     rnk = game.rnk
     b = assets.BIOME[game.mv]
@@ -260,6 +458,7 @@ def platform_ciz():
                     pygame.draw.rect(game.ekran, b["stone"], (sx3, p.y + 5, 20, 10))
         else:
             _ciz_platform_kenar(p, rnk, b)
+            _ciz_dekorasyon(p, i)
 
 def dusman_ciz(d):
     r = d["r"]

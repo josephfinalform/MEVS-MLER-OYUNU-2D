@@ -46,7 +46,7 @@ while cal:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 if game.drm == "oyun": game.drm = "settings"
-                elif game.drm in ("settings", "envanter"): game.drm = "menu"; audio.sk.stop()
+                elif game.drm == "settings": game.drm = "oyun"
             if game.drm == "oyun":
                 if event.key == pygame.K_SPACE:
                     if game.yr:
@@ -121,7 +121,9 @@ while cal:
             game.ammo -= 1
             game.shoot_cd = wd["cd"]
             audio.sfx_ates()
-            particles.ptk_birim(game.ox + arad*20, game.oy-20, wd["r"])
+            particles.ptk_patlatma(game.ox + arad*20, game.oy-20, wd["r"], 6, 3)
+            for _ in range(3):
+                particles.ptk_ekle(game.ox + arad*20, game.oy-20, (200, 200, 200), 1)
 
         # Sag tik / tus ile alev topu
         if (fire_btn_tut or (pygame.mouse.get_pressed()[2] and my < YUKSEKLIK - 120)) and game.fire_cd <= 0:
@@ -129,7 +131,8 @@ while cal:
             game.fireballs.append({"x": game.ox, "y": game.oy-20, "vx": 8*arad, "vy": -3, "t": 0})
             game.fire_cd = 300
             audio.sfx_ates()
-            particles.ptk_patlatma(game.ox + arad*20, game.oy-20, (255, 100, 0), 8)
+            particles.ptk_patlatma(game.ox + arad*20, game.oy-20, (255, 100, 0), 12, 5)
+            particles.ptk_patlatma(game.ox + arad*20, game.oy-20, (255, 200, 50), 8, 3)
 
         if game.shoot_cd > 0: game.shoot_cd -= 1
         if game.fire_cd > 0: game.fire_cd -= 1
