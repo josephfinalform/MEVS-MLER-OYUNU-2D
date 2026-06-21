@@ -21,6 +21,7 @@ def lv_yukle(m, rnd=1):
     game.boss_sv = False
     game.boss_hp = 0
     game.boss_max_hp = 0
+    game.boss_zorluk = None
     game.rnd_bitti = False
     game.puan = 0
     game.hiz_t = 0
@@ -93,14 +94,22 @@ def lv_yukle(m, rnd=1):
     # Level metadata
     game.lvl = {"d": m, "pu": [], "wp": []}
 
-    # Power-uplar (her levelde en az 2 tane)
+    # Power-uplar (her levelde en az 2 tane, tuzak ustune koyma)
     pu_sayisi = min(2 + rnd // 4, len(game.plt) - 2)
     for pi2 in range(pu_sayisi):
         put = random.choice(["hiz", "kalkan", "cift_zipla", "miknatis", "kalp"])
         idx = pi2 + 2
         if idx < len(game.plt):
             p = game.plt[idx]
-            game.lvl["pu"].append((p.centerx, p.top - 30, put))
+            px, py = p.centerx, p.top - 30
+            # Tuzak var mi kontrol
+            carpisma = False
+            for t in game.tzl:
+                if t.collidepoint(px, py):
+                    carpisma = True
+                    break
+            if not carpisma:
+                game.lvl["pu"].append((px, py, put))
 
     # Mermi paketi
     if len(game.plt) > 1:

@@ -844,19 +844,29 @@ while cal:
                 od = game.mv
                 if od not in game.envanter: game.envanter.append(od)
                 if game.puan > game.yuksek_puan.get(od, 0): game.yuksek_puan[od] = game.puan
-                if game.si < len(ms)-1:
-                    game.ekran.blit(game.fb.render(f"{game.mv.upper()} GECTIN!", True, NY), (GENISLIK//2-140, YUKSEKLIK//2-70))
-                    game.ekran.blit(game.f.render(f"Odul: {KOSTUMLER[od]['i']}", True, ALTIN), (GENISLIK//2-100, YUKSEKLIK//2))
-                    if ui.btn("ILERLE", GENISLIK//2-100, YUKSEKLIK//2+50, 200, 50, GT, AGT, NY):
-                        game.si += 1
-                        levels.lv_yukle(ms[game.si])
-                        game.cn = game.mc; game.rnd_bitti = False; game.boss_max_hp = 0
+                if game.rnd == 16:
+                    # Sezon bitti, sonraki mevsime gec
+                    if game.si < len(ms)-1:
+                        game.ekran.blit(game.fb.render(f"{game.mv.upper()} GECTIN!", True, NY), (GENISLIK//2-140, YUKSEKLIK//2-70))
+                        game.ekran.blit(game.f.render(f"Odul: {KOSTUMLER[od]['i']}", True, ALTIN), (GENISLIK//2-100, YUKSEKLIK//2))
+                        if ui.btn("ILERLE", GENISLIK//2-100, YUKSEKLIK//2+50, 200, 50, GT, AGT, NY):
+                            game.si += 1
+                            levels.lv_yukle(ms[game.si])
+                            game.cn = game.mc; game.rnd_bitti = False; game.boss_max_hp = 0
+                    else:
+                        game.ekran.blit(game.fb.render("TUM MEVSIMLERI GECTIN!", True, ALTIN), (GENISLIK//2-240, YUKSEKLIK//2-60))
+                        game.ekran.blit(game.f.render("Tebrikler! Oyun bitti.", True, B), (GENISLIK//2-100, YUKSEKLIK//2))
+                        game.ekran.blit(game.fk.render(f"Odul: {KOSTUMLER[od]['i']} kazanildi!", True, ALTIN), (GENISLIK//2-120, YUKSEKLIK//2+35))
+                        if ui.btn("MENU", GENISLIK//2-100, YUKSEKLIK//2+80, 200, 50, GT, AGT, NM):
+                            game.drm = "menu"; audio.muzik_durdur(); game.rnd_bitti = False; game.boss_max_hp = 0
                 else:
-                    game.ekran.blit(game.fb.render("TUM MEVSIMLERI GECTIN!", True, ALTIN), (GENISLIK//2-240, YUKSEKLIK//2-60))
-                    game.ekran.blit(game.f.render("Tebrikler! Oyun bitti.", True, B), (GENISLIK//2-100, YUKSEKLIK//2))
-                    game.ekran.blit(game.fk.render(f"Odul: {KOSTUMLER[od]['i']} kazanildi!", True, ALTIN), (GENISLIK//2-120, YUKSEKLIK//2+35))
-                    if ui.btn("MENU", GENISLIK//2-100, YUKSEKLIK//2+80, 200, 50, GT, AGT, NM):
-                        game.drm = "menu"; audio.muzik_durdur(); game.rnd_bitti = False; game.boss_max_hp = 0
+                    # Ara boss (4/8/12), sonraki rounda gec
+                    game.ekran.blit(game.fb.render(f"BOSS {game.boss_zorluk.upper()} YENILDI!", True, NY), (GENISLIK//2-170, YUKSEKLIK//2-70))
+                    game.ekran.blit(game.f.render(f"Siradaki: Tur {game.rnd+1}/16", True, B), (GENISLIK//2-80, YUKSEKLIK//2))
+                    if game.rnd_sayac > 30:
+                        game.rnd += 1
+                        levels.lv_yukle(game.mv, game.rnd)
+                        game.cn = game.mc; game.rnd_bitti = False
             elif game.boss_sv:
                 pass
             elif game.rnd < 16:
