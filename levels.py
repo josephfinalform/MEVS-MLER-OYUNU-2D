@@ -120,7 +120,13 @@ def lv_yukle(m, rnd=1):
             game.plt.append(pygame.Rect(bx, by, 180, 16))
         if len(game.plt) > 1:
             game.lvl["wp"].append((game.plt[-1].centerx, game.plt[-1].top - 30))
-        bh = assets.BOSS_HP[game.ayar["z"]]
+        # Boss zorlugu: 4=k:8=o:12=z:16=i
+        if rnd <= 4: bz = "kolay"
+        elif rnd <= 8: bz = "orta"
+        elif rnd <= 12: bz = "zor"
+        else: bz = "imkansiz"
+        game.boss_zorluk = bz
+        bh = assets.BOSS_HP[bz]
         bp = 1 + (assets.MS.index(m) * 0.5) + (rnd // 4) * 0.5
         game.boss_sv = True
         game.boss_max_hp = int(bh * bp * (1 + rnd * 0.1))
@@ -128,7 +134,7 @@ def lv_yukle(m, rnd=1):
         game.boss_timer = 0
         game.boss_ptrn = 0
         game.boss_dir = 1
-        game.boss_vx = assets.BOSS_SPD[game.ayar["z"]]
+        game.boss_vx = assets.BOSS_SPD[bz]
         game.boss_x = z // 2
         game.boss_y = 80
         game.boss_atk_cd = 0
@@ -571,7 +577,7 @@ def boss_ciz():
     bx = game.boss_x
     by = game.boss_y
     m = game.mv
-    zorluk = game.ayar["z"]
+    zorluk = game.boss_zorluk or game.ayar["z"]
     skin = assets.BOSS_SKIN[zorluk]
     glow = assets.BOSS_GLOW[zorluk]
     sz2 = game.sz

@@ -484,7 +484,7 @@ while cal:
             # Normal saldiri desenleri (her biyomda ortak)
             if game.boss_atk_cd <= 0:
                 ptrn = game.boss_ptrn % 4
-                zorluk_hiz = BOSS_ATK_CD[game.ayar["z"]]
+                zorluk_hiz = BOSS_ATK_CD[game.boss_zorluk or game.ayar["z"]]
                 spd = 3 + random.uniform(-0.5, 0.5)
                 if ptrn == 0:
                     # Tek hedef mermisi
