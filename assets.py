@@ -29,7 +29,7 @@ KOSTUMLER = {
 
 ms = ["ilkbahar", "yaz", "sonbahar", "kis"]
 
-z_can = {"kolay": 7, "orta": 5, "zor": 3, "imkansiz": 2}
+z_can = {"kolay": 14, "orta": 10, "zor": 6, "imkansiz": 4}
 z_dh = {"kolay": 0.5, "orta": 1.0, "zor": 1.5, "imkansiz": 2.0}
 z_yc = {"kolay": 0.45, "orta": 0.5, "zor": 0.6, "imkansiz": 0.7}
 z_zg = {"kolay": -13, "orta": -13, "zor": -12, "imkansiz": -11}
