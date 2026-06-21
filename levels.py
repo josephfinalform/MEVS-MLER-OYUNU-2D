@@ -582,56 +582,160 @@ def boss_ciz():
     glow = assets.BOSS_GLOW[zorluk]
     sz2 = game.sz
 
-    # Glow efekti (zorluga gore renk)
-    for gi in range(3):
-        gr = 35 + gi * 15
+    # Glow efekti
+    for gi in range(3 + skin):
+        gr = 35 + gi * 15 + skin * 3
         s2 = pygame.Surface((gr * 2, gr * 2), pygame.SRCALPHA)
         a2 = max(0, 60 - gi * 20)
         pygame.draw.circle(s2, (*glow, a2), (gr, gr), gr)
         game.ekran.blit(s2, (int(bx - gr), int(by - gr)))
 
+    # Boyut carpani
+    sc = 1.0 + skin * 0.12
+    ofs = int(20 * (sc - 1))
+
     if m == "ilkbahar":
-        saksi_offset = 10 if skin == 0 else 0
-        pygame.draw.polygon(game.ekran, (180 - skin * 30, 100, 50), [(int(bx - 25), int(by + 40 + saksi_offset)), (int(bx + 25), int(by + 40 + saksi_offset)), (int(bx + 20), int(by + 55 + saksi_offset)), (int(bx - 20), int(by + 55 + saksi_offset))])
-        pygame.draw.rect(game.ekran, (60, 140 + skin * 20, 60), (int(bx - 6), int(by + 10), 12, 30))
-        pygame.draw.ellipse(game.ekran, (60, 160, 60), (int(bx - 28), int(by - 15), 56, 40))
-        pygame.draw.ellipse(game.ekran, (200 - skin * 50, 50, 50), (int(bx - 20), int(by - 8), 40, 28))
-        pygame.draw.circle(game.ekran, (255, 255, 100), (int(bx - 16), int(by - 22)), 6)
-        pygame.draw.circle(game.ekran, (255, 255, 100), (int(bx + 4), int(by - 22)), 6)
-        pygame.draw.circle(game.ekran, assets.S, (int(bx - 10), int(by - 20)), 3)
-        pygame.draw.circle(game.ekran, assets.S, (int(bx + 10), int(by - 20)), 3)
-        if skin == 1:
-            pygame.draw.circle(game.ekran, (255, 0, 0), (int(bx - 10), int(by - 20)), 4, 1)
-            pygame.draw.circle(game.ekran, (255, 0, 0), (int(bx + 10), int(by - 20)), 4, 1)
+        # Govde
+        pygame.draw.ellipse(game.ekran, (60, 140 + skin * 10, 60), (int(bx - 28 * sc), int(by - 15 * sc + ofs), int(56 * sc), int(40 * sc)))
+        pygame.draw.ellipse(game.ekran, (200 - skin * 40, 50, 50), (int(bx - 20 * sc), int(by - 8 * sc + ofs), int(40 * sc), int(28 * sc)))
+        # Yaprak tac
+        pygame.draw.rect(game.ekran, (60, 140 + skin * 20, 60), (int(bx - 6 * sc), int(by + 10 + ofs), int(12 * sc), int(30 * sc)))
+        # Gozler
+        pygame.draw.circle(game.ekran, (255, 255, 100), (int(bx - 16 * sc), int(by - 22 * sc + ofs)), int(6 * sc))
+        pygame.draw.circle(game.ekran, (255, 255, 100), (int(bx + 4 * sc), int(by - 22 * sc + ofs)), int(6 * sc))
+        pygame.draw.circle(game.ekran, assets.S, (int(bx - 10 * sc), int(by - 20 * sc + ofs)), int(3 * sc))
+        pygame.draw.circle(game.ekran, assets.S, (int(bx + 10 * sc), int(by - 20 * sc + ofs)), int(3 * sc))
+        # Saksi
+        saksi_w = int(50 * sc)
+        pygame.draw.polygon(game.ekran, (180 - skin * 30, 100 - skin * 10, 50), [(int(bx - saksi_w // 2), int(by + 40 * sc + ofs)), (int(bx + saksi_w // 2), int(by + 40 * sc + ofs)), (int(bx + saksi_w // 2 * 0.8), int(by + 60 * sc + ofs)), (int(bx - saksi_w // 2 * 0.8), int(by + 60 * sc + ofs))])
+        if skin >= 1:
+            # Dikenler
+            for di in range(4):
+                dx2 = bx - 30 + di * 20
+                pygame.draw.polygon(game.ekran, (100, 180, 100), [(dx2, int(by - 10 * sc + ofs)), (dx2 - 6, int(by - 20 * sc + ofs)), (dx2 + 6, int(by - 20 * sc + ofs))])
+        if skin >= 2:
+            # Kirmizi goz isini
+            pygame.draw.circle(game.ekran, (255, 0, 0), (int(bx - 10 * sc), int(by - 20 * sc + ofs)), int(5 * sc), int(2 * sc))
+            pygame.draw.circle(game.ekran, (255, 0, 0), (int(bx + 10 * sc), int(by - 20 * sc + ofs)), int(5 * sc), int(2 * sc))
+            # Sarmaşık
+            for vi in range(3):
+                vx3 = bx - 20 + vi * 20
+                vy3 = by + 20 * sc + ofs
+                for _ in range(4):
+                    pygame.draw.circle(game.ekran, (40, 100, 40), (int(vx3), int(vy3)), int(4 * sc))
+                    vy3 += 8
+        if skin >= 3:
+            # Alev tac
+            for ai in range(6):
+                aa = sz2 * 0.1 + ai * 1.047
+                ax2 = bx + int(math.cos(aa) * 34 * sc)
+                ay2 = by - 28 * sc + int(math.sin(aa) * 8 * sc) + ofs
+                pygame.draw.circle(game.ekran, (255, 50, 50), (ax2, ay2), int(6 * sc))
+                pygame.draw.circle(game.ekran, (255, 200, 50), (ax2, ay2), int(3 * sc))
+
     elif m == "yaz":
-        scale = 1.1 if skin == 1 else 1.0
-        bx_s = int(bx * scale - bx * (scale - 1))
-        by_s = int(by * scale - by * (scale - 1))
-        pygame.draw.polygon(game.ekran, (180 - skin * 40, 150, 100), [(int(bx_s - 35), int(by_s + 35)), (int(bx_s - 30), int(by_s)), (int(bx_s), int(by_s - 10)), (int(bx_s + 30), int(by_s)), (int(bx_s + 35), int(by_s + 35))])
-        pygame.draw.circle(game.ekran, (190, 160, 110), (int(bx_s), int(by_s - 5)), 22)
-        pygame.draw.circle(game.ekran, (255 - skin * 100, 200, 50), (int(bx_s - 8), int(by_s - 10)), 6)
-        pygame.draw.circle(game.ekran, (255 - skin * 100, 200, 50), (int(bx_s + 8), int(by_s - 10)), 6)
-        if skin == 1:
-            pygame.draw.circle(game.ekran, (255, 0, 0), (int(bx_s - 8), int(by_s - 10)), 3)
-            pygame.draw.circle(game.ekran, (255, 0, 0), (int(bx_s + 8), int(by_s - 10)), 3)
+        sc2 = 1.0 + skin * 0.15
+        bx2 = int(bx * sc2 - bx * (sc2 - 1))
+        by2 = int(by * sc2 - by * (sc2 - 1)) + ofs
+        # Taç
+        asy = by2
+        pygame.draw.polygon(game.ekran, (180 - skin * 40, 150 - skin * 20, 100 - skin * 20), [(int(bx2 - 35 * sc2), int(asy + 35 * sc2)), (int(bx2 - 30 * sc2), int(asy)), (int(bx2), int(asy - 10 * sc2)), (int(bx2 + 30 * sc2), int(asy)), (int(bx2 + 35 * sc2), int(asy + 35 * sc2))])
+        # Yuze
+        pygame.draw.circle(game.ekran, (190 - skin * 20, 160 - skin * 30, 110 - skin * 30), (int(bx2), int(asy - 5 * sc2)), int(22 * sc2))
+        # Gozler
+        pygame.draw.circle(game.ekran, (255 - skin * 80, 200 - skin * 50, 50), (int(bx2 - 8 * sc2), int(asy - 10 * sc2)), int(6 * sc2))
+        pygame.draw.circle(game.ekran, (255 - skin * 80, 200 - skin * 50, 50), (int(bx2 + 8 * sc2), int(asy - 10 * sc2)), int(6 * sc2))
+        if skin >= 1:
+            # Isinlar
+            for ri in range(8):
+                ra = ri * 0.785 + sz2 * 0.02
+                rx2 = bx2 + int(math.cos(ra) * 32 * sc2)
+                ry2 = asy + int(math.sin(ra) * 32 * sc2)
+                pygame.draw.line(game.ekran, (255, 200, 50), (bx2, asy), (rx2, ry2), max(1, int(3 * sc2)))
+        if skin >= 2:
+            # Kirmizi goz
+            pygame.draw.circle(game.ekran, (255, 0, 0), (int(bx2 - 8 * sc2), int(asy - 10 * sc2)), int(3 * sc2))
+            pygame.draw.circle(game.ekran, (255, 0, 0), (int(bx2 + 8 * sc2), int(asy - 10 * sc2)), int(3 * sc2))
+            # Kor
+            for ki in range(4):
+                ka = sz2 * 0.15 + ki * 1.57
+                kx2 = bx2 + int(math.cos(ka) * 28 * sc2)
+                ky2 = asy + int(math.sin(ka) * 28 * sc2)
+                pygame.draw.circle(game.ekran, (255, 100, 0), (kx2, ky2), int(4 * sc2))
+        if skin >= 3:
+            # Supernova halkasi
+            for hi in range(12):
+                ha = sz2 * 0.05 + hi * 0.523
+                hx2 = bx2 + int(math.cos(ha) * 40 * sc2)
+                hy2 = by2 + int(math.sin(ha) * 10 * sc2)
+                pygame.draw.circle(game.ekran, (200, 50, 255), (hx2, hy2), int(3 * sc2))
+            # Patlama
+            for pi in range(5):
+                pa = sz2 * 0.3 + pi * 1.256
+                px2 = bx2 + int(math.cos(pa) * 50 * sc2)
+                py2 = asy - 10 + int(math.sin(pa) * 5)
+                pygame.draw.circle(game.ekran, (255, 255, 100), (px2, py2), int(2 * sc2))
+
     elif m == "sonbahar":
-        renk_k = (25 - skin * 10, 20 - skin * 10, 15)
-        renk_g = (60 - skin * 30, 10, 60)
-        pygame.draw.rect(game.ekran, renk_k, (int(bx - 18), int(by + 8), 36, 35))
-        pygame.draw.rect(game.ekran, renk_k, (int(bx - 14), int(by - 20), 28, 28))
-        pygame.draw.rect(game.ekran, renk_g, (int(bx - 10), int(by - 16), 8, 6))
-        pygame.draw.rect(game.ekran, renk_g, (int(bx + 2), int(by - 16), 8, 6))
-        if skin == 1:
-            pygame.draw.circle(game.ekran, (255, 0, 0), (int(bx - 6), int(by - 13)), 3)
-            pygame.draw.circle(game.ekran, (255, 0, 0), (int(bx + 6), int(by - 13)), 3)
+        # Govde
+        renk_k = (25 - skin * 5, 20 - skin * 5, 15)
+        renk_g = (60 - skin * 15, 10, 60 - skin * 10)
+        pygame.draw.rect(game.ekran, renk_k, (int(bx - 18 * sc), int(by + 8 * sc + ofs), int(36 * sc), int(35 * sc)))
+        pygame.draw.rect(game.ekran, renk_k, (int(bx - 14 * sc), int(by - 20 * sc + ofs), int(28 * sc), int(28 * sc)))
+        pygame.draw.rect(game.ekran, renk_g, (int(bx - 10 * sc), int(by - 16 * sc + ofs), int(8 * sc), int(6 * sc)))
+        pygame.draw.rect(game.ekran, renk_g, (int(bx + 2 * sc), int(by - 16 * sc + ofs), int(8 * sc), int(6 * sc)))
+        if skin >= 1:
+            # Kollar
+            pygame.draw.line(game.ekran, renk_k, (int(bx - 18 * sc), int(by + 12 * sc + ofs)), (int(bx - 30 * sc), int(by + 25 * sc + ofs)), max(1, int(4 * sc)))
+            pygame.draw.line(game.ekran, renk_k, (int(bx + 18 * sc), int(by + 12 * sc + ofs)), (int(bx + 30 * sc), int(by + 25 * sc + ofs)), max(1, int(4 * sc)))
+        if skin >= 2:
+            # Kirmizi goz
+            pygame.draw.circle(game.ekran, (255, 0, 0), (int(bx - 6 * sc), int(by - 13 * sc + ofs)), int(3 * sc))
+            pygame.draw.circle(game.ekran, (255, 0, 0), (int(bx + 6 * sc), int(by - 13 * sc + ofs)), int(3 * sc))
+            # Yaprak dususu
+            for yi in range(3):
+                ya = sz2 * 0.1 + yi * 2.0
+                yx2 = bx + int(math.cos(ya) * 30 * sc)
+                yy2 = by - 10 + int(math.sin(ya) * 5 * sc) + ofs
+                pygame.draw.ellipse(game.ekran, (200 - yi * 30, 100 - yi * 20, 20), (yx2, yy2, int(8 * sc), int(4 * sc)))
+        if skin >= 3:
+            # Hayalet koruyucu halka
+            for si in range(8):
+                sa = sz2 * 0.03 + si * 0.785
+                sx2 = bx + int(math.cos(sa) * 38 * sc)
+                sy2 = by + int(math.sin(sa) * 38 * sc) + ofs
+                pygame.draw.circle(game.ekran, (150, 50, 200), (sx2, sy2), int(3 * sc))
+                pygame.draw.circle(game.ekran, (200, 100, 255), (sx2, sy2), int(1 * sc))
+
     elif m == "kis":
-        pygame.draw.ellipse(game.ekran, (220 - skin * 30, 230 - skin * 20, 240 - skin * 10), (int(bx - 30), int(by), 60, 50))
-        pygame.draw.circle(game.ekran, (230 - skin * 30, 235 - skin * 20, 245 - skin * 10), (int(bx), int(by - 8)), 18)
-        pygame.draw.circle(game.ekran, (150, 30, 30), (int(bx - 6), int(by - 12)), 4)
-        pygame.draw.circle(game.ekran, (150, 30, 30), (int(bx + 6), int(by - 12)), 4)
-        if skin == 1:
-            pygame.draw.circle(game.ekran, (255, 0, 0), (int(bx - 6), int(by - 12)), 6, 1)
-            pygame.draw.circle(game.ekran, (255, 0, 0), (int(bx + 6), int(by - 12)), 6, 1)
+        pygame.draw.ellipse(game.ekran, (220 - skin * 20, 230 - skin * 15, 240 - skin * 20), (int(bx - 30 * sc), int(by + ofs), int(60 * sc), int(50 * sc)))
+        pygame.draw.circle(game.ekran, (230 - skin * 20, 235 - skin * 15, 245 - skin * 20), (int(bx), int(by - 8 * sc + ofs)), int(18 * sc))
+        pygame.draw.circle(game.ekran, (150 + skin * 20, 30, 30), (int(bx - 6 * sc), int(by - 12 * sc + ofs)), int(4 * sc))
+        pygame.draw.circle(game.ekran, (150 + skin * 20, 30, 30), (int(bx + 6 * sc), int(by - 12 * sc + ofs)), int(4 * sc))
+        if skin >= 1:
+            # Buz sivri
+            for bi in range(5):
+                bx3 = bx - 25 + bi * 12
+                by3 = by + 20 * sc + ofs
+                pygame.draw.polygon(game.ekran, (200 - skin * 10, 220 - skin * 10, 255), [(bx3, by3), (bx3 - 5, by3 + int(10 * sc)), (bx3 + 5, by3 + int(10 * sc))])
+        if skin >= 2:
+            # Kirmizi goz isini
+            pygame.draw.circle(game.ekran, (255, 0, 0), (int(bx - 6 * sc), int(by - 12 * sc + ofs)), int(6 * sc), int(2 * sc))
+            pygame.draw.circle(game.ekran, (255, 0, 0), (int(bx + 6 * sc), int(by - 12 * sc + ofs)), int(6 * sc), int(2 * sc))
+            # Kar tacı
+            for ti in range(6):
+                ta = sz2 * 0.05 + ti * 1.047
+                tx2 = bx + int(math.cos(ta) * 28 * sc)
+                ty2 = by - 20 * sc + int(math.sin(ta) * 8 * sc) + ofs
+                pygame.draw.circle(game.ekran, (200, 220, 255), (tx2, ty2), int(4 * sc))
+        if skin >= 3:
+            # Firtina
+            for fi in range(6):
+                fa = sz2 * 0.04 + fi * 1.047
+                fx2 = bx + int(math.cos(fa) * 40 * sc)
+                fy2 = by + int(math.sin(fa) * 40 * sc) + ofs
+                pygame.draw.circle(game.ekran, (180, 200, 255), (fx2, fy2), int(2 * sc))
+                pygame.draw.line(game.ekran, (150, 180, 255), (bx, by + ofs), (fx2, fy2), 1)
 
     # Boss can bar (ustte)
     bbw = 300

@@ -38,7 +38,7 @@ BOSS_HP = {"kolay": 8, "orta": 12, "zor": 18, "imkansiz": 25}
 BOSS_SPD = {"kolay": 1.5, "orta": 2.5, "zor": 3.5, "imkansiz": 4.5}
 BOSS_ATK_CD = {"kolay": 90, "orta": 60, "zor": 40, "imkansiz": 25}
 
-BOSS_SKIN = {"kolay": 0, "orta": 0, "zor": 1, "imkansiz": 1}
+BOSS_SKIN = {"kolay": 0, "orta": 1, "zor": 2, "imkansiz": 3}
 BOSS_GLOW = {"kolay": (100, 100, 100), "orta": (200, 200, 50), "zor": (255, 50, 50), "imkansiz": (255, 0, 100)}
 
 WP_DATA = {
