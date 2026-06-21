@@ -2,7 +2,7 @@
   "si": 0,
   "mv": "ilkbahar",
   "rnd": 1,
-  "puan": 0,
+  "puan": 285,
   "envanter": [],
   "aktif_k": null,
   "yuksek_puan": {},
@@ -12,5 +12,5 @@
     "ses": 14,
     "lobi_ses": 2
   },
-  "ses_pos": 4.006
+  "ses_pos": -0.001
 }

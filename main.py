@@ -27,6 +27,8 @@ game.ikonlar = {
     "ses_acik": pygame.image.load(os.path.join(_ikon_yolu, "ses_acik.png")).convert_alpha(),
     "ses_kapali": pygame.image.load(os.path.join(_ikon_yolu, "ses_kapali.png")).convert_alpha(),
     "kaydet": pygame.image.load(os.path.join(_ikon_yolu, "kaydet.png")).convert_alpha(),
+    "joy_base": pygame.transform.scale(pygame.image.load(os.path.join(_ikon_yolu, "joystick.png")).convert_alpha(), (88, 88)),
+    "joy_handle": pygame.transform.scale(pygame.image.load(os.path.join(_ikon_yolu, "smallhandlefilled.png")).convert_alpha(), (32, 32)),
 }
 
 pygame.display.set_caption("Mevsimler Oyunu")
@@ -798,13 +800,13 @@ while cal:
 
         game.ekran.blit(game.fk.render("ESC: Men | SOL TIK: Ates | SAG TIK: Alev | SPACE: Zipla", True, AGT), (10, YUKSEKLIK-30))
 
-        # Joystick ciz (yarim saydam)
-        js = pygame.Surface(((joy_r+16)*2, (joy_r+16)*2), pygame.SRCALPHA)
-        pygame.draw.circle(js, (40, 40, 60, 100), (joy_r+16, joy_r+16), joy_r + 12)
-        pygame.draw.circle(js, (60, 60, 80, 150), (joy_r+16, joy_r+16), joy_r + 12, 2)
-        pygame.draw.circle(js, (80, 80, 120, 150), (joy_r+16 + int(joy_x * joy_r), joy_r+16 + int(joy_y * joy_r)), 14)
-        pygame.draw.circle(js, NP + (200,), (joy_r+16 + int(joy_x * joy_r), joy_r+16 + int(joy_y * joy_r)), 14, 2)
-        game.ekran.blit(js, (joy_merkez_x - joy_r - 16, joy_merkez_y - joy_r - 16))
+        # Joystick ciz
+        joy_base_img = game.ikonlar["joy_base"]
+        joy_handle_img = game.ikonlar["joy_handle"]
+        game.ekran.blit(joy_base_img, (joy_merkez_x - joy_base_img.get_width()//2, joy_merkez_y - joy_base_img.get_height()//2))
+        hx = joy_merkez_x + int(joy_x * joy_r) - joy_handle_img.get_width()//2
+        hy = joy_merkez_y + int(joy_y * joy_r) - joy_handle_img.get_height()//2
+        game.ekran.blit(joy_handle_img, (hx, hy))
 
         # Alev topu tusu (yarim saydam)
         fs = pygame.Surface(((fire_btn_r+12)*2, (fire_btn_r+12)*2), pygame.SRCALPHA)
