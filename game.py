@@ -87,9 +87,13 @@ te_mi = False
 puan = 0
 yuksek_puan = {}
 hava_efektleri = []
+rnd_sayac = 0
 ses_acik = True
+onceki_drm = None
+ses_pos = 0.0
+ses_mv = None
 
-ayar = {"z": "orta", "te": False, "ses": 50}
+ayar = {"z": "orta", "te": False, "ses": 50, "lobi_ses": 50}
 
 envanter = []
 aktif_k = None

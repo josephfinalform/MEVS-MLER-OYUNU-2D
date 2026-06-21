@@ -150,11 +150,8 @@ def lv_yukle(m, rnd=1):
     game.ammo = 100 if bos_round else 25
     game.weapon = game.mv
 
-    if game.mk:
-        import audio
-        audio.sk.stop()
-        audio.sk.set_volume(game.ayar["ses"] / 100)
-        audio.sk.play(audio.SESLER[m], -1)
+    import audio
+    audio.sezon_muzik(m)
 
     import particles as p
     p.bg_par_baslat()

@@ -43,3 +43,15 @@ def ikon(x, y, s, rn=assets.B):
             lx = cx + 7 + li*4
             pygame.draw.line(game.ekran, rn, (lx, cy-5), (lx, cy+5), 2)
     return u and game.ft
+
+def disket(x, y):
+    mx, my = pygame.mouse.get_pos()
+    r = pygame.Rect(x, y, 32, 32)
+    u = r.collidepoint(mx, my)
+    renk = assets.AGT if u else (50, 60, 80)
+    pygame.draw.rect(game.ekran, renk, r, border_radius=4)
+    pygame.draw.rect(game.ekran, assets.B, r, 2, border_radius=4)
+    # disket govde cizgisi
+    pygame.draw.rect(game.ekran, (30, 30, 50), (x+4, y+18, 24, 10))
+    pygame.draw.rect(game.ekran, (60, 70, 90), (x+6, y+6, 20, 14))
+    return u and game.ft

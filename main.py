@@ -13,6 +13,7 @@ import ui
 import levels
 import screens
 import player
+import save
 game.ekran = pygame.display.set_mode((GENISLIK, YUKSEKLIK))
 pygame.display.set_caption("Mevsimler Oyunu")
 game.saat = pygame.time.Clock()
@@ -108,8 +109,8 @@ while cal:
         if joy_x > 0.3: game.yn = 1
         elif joy_x < -0.3: game.yn = -1
 
-        # Sol tik ile ates
-        if pygame.mouse.get_pressed()[0] and not joy_tut and game.weapon and game.ammo > 0 and game.shoot_cd <= 0 and my < YUKSEKLIK - 120:
+        # Sol tik ile ates (ikonlara tiklamayi algilama)
+        if pygame.mouse.get_pressed()[0] and not joy_tut and game.weapon and game.ammo > 0 and game.shoot_cd <= 0 and my < YUKSEKLIK - 120 and not (mx > GENISLIK - 250 and my < 55):
             arad = -1 if game.yn < 0 else 1
             wd = WP_DATA[game.mv]
             shot_spd = wd["spd"]
@@ -125,8 +126,8 @@ while cal:
             for _ in range(3):
                 particles.ptk_ekle(game.ox + arad*20, game.oy-20, (200, 200, 200), 1)
 
-        # Sag tik / tus ile alev topu
-        if (fire_btn_tut or (pygame.mouse.get_pressed()[2] and my < YUKSEKLIK - 120)) and game.fire_cd <= 0:
+        # Sag tik / tus ile alev topu (ikonlara tiklamayi algilama)
+        if (fire_btn_tut or (pygame.mouse.get_pressed()[2] and my < YUKSEKLIK - 120 and not (mx > GENISLIK - 250 and my < 55))) and game.fire_cd <= 0:
             arad = -1 if game.yn < 0 else 1
             game.fireballs.append({"x": game.ox, "y": game.oy-20, "vx": 8*arad, "vy": -3, "t": 0})
             game.fire_cd = 300
@@ -731,17 +732,17 @@ while cal:
             pygame.draw.circle(game.ekran, KR, (int(game.ox), int(game.oy-20)), 40, 3)
 
         # HUD
-        if ui.ikon(GENISLIK-130, 10, "A", NM): game.drm = "settings"
+        if ui.ikon(GENISLIK-130, 10, "A", NM): game.onceki_drm = game.drm; game.drm = "settings"
         if ui.ikon(GENISLIK-86, 10, "R", NY):
             game.cn = game.mc
             game.ox, game.oy = game.cp_x, game.cp_y
             game.hx = game.hy = 0
-        if ui.ikon(GENISLIK-42, 10, "M", K): game.drm = "menu"; audio.sk.stop()
+        if ui.ikon(GENISLIK-42, 10, "M", K): game.drm = "menu"; audio.muzik_durdur(); save.kaydet()
         if ui.ikon(GENISLIK-174, 10, "S", NM if game.ses_acik else K):
             game.ses_acik = not game.ses_acik
-            audio.sk.set_volume(game.ayar["ses"]/100 if game.ses_acik else 0)
-            audio.ses_kanal.set_volume(game.ayar["ses"]/100 if game.ses_acik else 0)
-            audio.ses_kanal2.set_volume(game.ayar["ses"]/100 if game.ses_acik else 0)
+            audio.sfx_ses_ayarla()
+        if ui.disket(GENISLIK-218, 10):
+            save.kaydet()
 
         # Can bar
         bw = 200
@@ -807,7 +808,7 @@ while cal:
             game.ekran.blit(game.fb.render("OYUN BITTI", True, K), (GENISLIK//2-120, YUKSEKLIK//2-70))
             game.ekran.blit(game.f.render("R ile yeniden basla", True, B), (GENISLIK//2-110, YUKSEKLIK//2))
             if ui.btn("MENU", GENISLIK//2-100, YUKSEKLIK//2+50, 200, 50, GT, AGT, NM):
-                game.drm = "menu"; audio.sk.stop()
+                game.drm = "menu"; audio.muzik_durdur()
 
         # Tur bitis
         if getattr(game, 'rnd_bitti', False) and game.cn > 0:
@@ -831,7 +832,7 @@ while cal:
                     game.ekran.blit(game.f.render("Tebrikler! Oyun bitti.", True, B), (GENISLIK//2-100, YUKSEKLIK//2))
                     game.ekran.blit(game.fk.render(f"Odul: {KOSTUMLER[od]['i']} kazanildi!", True, ALTIN), (GENISLIK//2-120, YUKSEKLIK//2+35))
                     if ui.btn("MENU", GENISLIK//2-100, YUKSEKLIK//2+80, 200, 50, GT, AGT, NM):
-                        game.drm = "menu"; audio.sk.stop(); game.rnd_bitti = False; game.boss_max_hp = 0
+                        game.drm = "menu"; audio.muzik_durdur(); game.rnd_bitti = False; game.boss_max_hp = 0
             elif game.boss_sv:
                 pass
             elif game.rnd < 16:
