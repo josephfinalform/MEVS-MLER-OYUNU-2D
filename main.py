@@ -31,6 +31,9 @@ game.ikonlar = {
     "joy_handle": pygame.transform.scale(pygame.image.load(os.path.join(_ikon_yolu, "smallhandlefilled.png")).convert_alpha(), (32, 32)),
 }
 
+_tex_yolu = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Season_collection.png")
+game.tex_sheet = pygame.image.load(_tex_yolu).convert_alpha()
+
 pygame.display.set_caption("Mevsimler Oyunu")
 game.saat = pygame.time.Clock()
 game.f = pygame.font.Font(None, 36)

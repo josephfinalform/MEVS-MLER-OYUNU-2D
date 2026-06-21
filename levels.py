@@ -172,22 +172,35 @@ def lv_yukle(m, rnd=1):
     import particles as p
     p.bg_par_baslat()
 
+def _ciz_texture(tx, ty, x, y, w, h):
+    if game.tex_sheet is None:
+        return
+    tile = game.tex_sheet.subsurface((tx * 16, ty * 16, 16, 16))
+    for px in range(int(x), int(x + w), 16):
+        for py in range(int(y), int(y + h), 16):
+            game.ekran.blit(tile, (px, py))
+
 def _ciz_platform_kenar(p, rnk, b):
     x, y, w, h2 = p.x, p.y, p.w, p.h
-    pygame.draw.rect(game.ekran, b["soil"], p)
-    pygame.draw.rect(game.ekran, b["deep_soil"], p, 1)
-    cim_r = pygame.Rect(x, y - 2, w, 6)
-    pygame.draw.rect(game.ekran, b["grass"], cim_r)
-    pygame.draw.line(game.ekran, b["grass"], (x, y - 2), (x + w, y - 2), 2)
-    for ti in range(w // 40):
-        tx = x + ti * 40 + 10
-        if (tx * 7 + y * 13) % 10 < 3:
-            pygame.draw.circle(game.ekran, b["stone"], (tx, y + 8), (tx * 3 + y) % 4 + 3)
-    for ci in range(w // 20):
-        cx2 = x + ci * 20 + 5
-        cy2 = y - 2
-        if (cx2 * 5 + cy2 * 7) % 10 < 4:
-            pygame.draw.line(game.ekran, b["grass"], (cx2, cy2), (cx2 + ((cx2 * 3) % 5 - 2), cy2 - ((cy2 * 7) % 5 + 4)), 2)
+    tex = game.TEXTURE_MAP.get(game.mv)
+    if tex and game.tex_sheet:
+        _ciz_texture(tex["soil"][0], tex["soil"][1], x, y, w, h2)
+        _ciz_texture(tex["grass"][0], tex["grass"][1], x, y - 2, w, 16)
+    else:
+        pygame.draw.rect(game.ekran, b["soil"], p)
+        pygame.draw.rect(game.ekran, b["deep_soil"], p, 1)
+        cim_r = pygame.Rect(x, y - 2, w, 6)
+        pygame.draw.rect(game.ekran, b["grass"], cim_r)
+        pygame.draw.line(game.ekran, b["grass"], (x, y - 2), (x + w, y - 2), 2)
+        for ti in range(w // 40):
+            tx2 = x + ti * 40 + 10
+            if (tx2 * 7 + y * 13) % 10 < 3:
+                pygame.draw.circle(game.ekran, b["stone"], (tx2, y + 8), (tx2 * 3 + y) % 4 + 3)
+        for ci in range(w // 20):
+            cx2 = x + ci * 20 + 5
+            cy2 = y - 2
+            if (cx2 * 5 + cy2 * 7) % 10 < 4:
+                pygame.draw.line(game.ekran, b["grass"], (cx2, cy2), (cx2 + ((cx2 * 3) % 5 - 2), cy2 - ((cy2 * 7) % 5 + 4)), 2)
 
 def _ciz_dekorasyon(p, idx):
     if idx == 0:
@@ -455,21 +468,25 @@ def platform_ciz():
     b = assets.BIOME[game.mv]
     for i, p in enumerate(game.plt):
         if i == 0:
-            # Ana zemin - Terraria tarzi
-            pygame.draw.rect(game.ekran, b["soil"], p)
-            pygame.draw.rect(game.ekran, b["deep_soil"], p, 1)
-            cim_r = pygame.Rect(p.x, p.y - 3, p.w, 6)
-            pygame.draw.rect(game.ekran, b["grass"], cim_r)
-            pygame.draw.line(game.ekran, b["grass"], (p.x, p.y - 3), (p.right, p.y - 3), 3)
-            for ci in range(p.w // 15):
-                cx3 = p.x + ci * 15 + 5
-                cy3 = p.y - 3
-                if (cx3 * 7 + cy3 * 3) % 10 < 3:
-                    pygame.draw.line(game.ekran, b["grass"], (cx3, cy3), (cx3 + ((cx3 * 5) % 5 - 2), cy3 - ((cy3 * 7) % 5 + 3)), 2)
-            for si in range(p.w // 60):
-                sx3 = p.x + si * 60 + 15
-                if (sx3 * 11 + p.y * 3) % 10 < 4:
-                    pygame.draw.rect(game.ekran, b["stone"], (sx3, p.y + 5, 20, 10))
+            tex = game.TEXTURE_MAP.get(game.mv)
+            if tex and game.tex_sheet:
+                _ciz_texture(tex["soil"][0], tex["soil"][1], p.x, p.y, p.w, p.h)
+                _ciz_texture(tex["grass"][0], tex["grass"][1], p.x, p.y - 3, p.w, 16)
+            else:
+                pygame.draw.rect(game.ekran, b["soil"], p)
+                pygame.draw.rect(game.ekran, b["deep_soil"], p, 1)
+                cim_r = pygame.Rect(p.x, p.y - 3, p.w, 6)
+                pygame.draw.rect(game.ekran, b["grass"], cim_r)
+                pygame.draw.line(game.ekran, b["grass"], (p.x, p.y - 3), (p.right, p.y - 3), 3)
+                for ci in range(p.w // 15):
+                    cx3 = p.x + ci * 15 + 5
+                    cy3 = p.y - 3
+                    if (cx3 * 7 + cy3 * 3) % 10 < 3:
+                        pygame.draw.line(game.ekran, b["grass"], (cx3, cy3), (cx3 + ((cx3 * 5) % 5 - 2), cy3 - ((cy3 * 7) % 5 + 3)), 2)
+                for si in range(p.w // 60):
+                    sx3 = p.x + si * 60 + 15
+                    if (sx3 * 11 + p.y * 3) % 10 < 4:
+                        pygame.draw.rect(game.ekran, b["stone"], (sx3, p.y + 5, 20, 10))
         else:
             _ciz_platform_kenar(p, rnk, b)
             _ciz_dekorasyon(p, i)

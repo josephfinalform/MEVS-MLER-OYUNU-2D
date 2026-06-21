@@ -99,3 +99,11 @@ envanter = []
 aktif_k = None
 ikonlar = {}
 boss_zorluk = None
+
+tex_sheet = None
+TEXTURE_MAP = {
+    "ilkbahar": {"grass": (2, 38), "soil": (2, 40)},
+    "yaz": {"grass": (5, 21), "soil": (4, 20)},
+    "sonbahar": {"grass": (22, 17), "soil": (6, 16)},
+    "kis": {"grass": (4, 55), "soil": (22, 55)},
+}
