@@ -14,7 +14,21 @@ import levels
 import screens
 import player
 import save
+
 game.ekran = pygame.display.set_mode((GENISLIK, YUKSEKLIK))
+
+# Oyun ikonlarini yukle
+import os
+_ikon_yolu = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons")
+game.ikonlar = {
+    "ayarlar": pygame.image.load(os.path.join(_ikon_yolu, "ayarlar.png")).convert_alpha(),
+    "yenile": pygame.image.load(os.path.join(_ikon_yolu, "yenile.png")).convert_alpha(),
+    "menu": pygame.image.load(os.path.join(_ikon_yolu, "menu.png")).convert_alpha(),
+    "ses_acik": pygame.image.load(os.path.join(_ikon_yolu, "ses_acik.png")).convert_alpha(),
+    "ses_kapali": pygame.image.load(os.path.join(_ikon_yolu, "ses_kapali.png")).convert_alpha(),
+    "kaydet": pygame.image.load(os.path.join(_ikon_yolu, "kaydet.png")).convert_alpha(),
+}
+
 pygame.display.set_caption("Mevsimler Oyunu")
 game.saat = pygame.time.Clock()
 game.f = pygame.font.Font(None, 36)
@@ -731,17 +745,25 @@ while cal:
         if game.kalkan_t > 0:
             pygame.draw.circle(game.ekran, KR, (int(game.ox), int(game.oy-20)), 40, 3)
 
-        # HUD
-        if ui.ikon(GENISLIK-130, 10, "A", NM): game.onceki_drm = game.drm; game.drm = "settings"
-        if ui.ikon(GENISLIK-86, 10, "R", NY):
+        # HUD - oyun ikonlari
+        mx, my = pygame.mouse.get_pos()
+        def _ikon_btn(x, y, img, aktif_mi=True):
+            r = pygame.Rect(x, y, 36, 36)
+            uzerinde = r.collidepoint(mx, my)
+            pygame.draw.circle(game.ekran, (80, 80, 120) if (uzerinde and aktif_mi) else (40, 40, 60), (x+18, y+18), 20)
+            game.ekran.blit(img, (x, y))
+            return uzerinde and game.ft
+
+        if _ikon_btn(GENISLIK-130, 10, game.ikonlar["ayarlar"]): game.onceki_drm = game.drm; game.drm = "settings"
+        if _ikon_btn(GENISLIK-86, 10, game.ikonlar["yenile"]):
             game.cn = game.mc
             game.ox, game.oy = game.cp_x, game.cp_y
             game.hx = game.hy = 0
-        if ui.ikon(GENISLIK-42, 10, "M", K): game.drm = "menu"; audio.muzik_durdur(); save.kaydet()
-        if ui.ikon(GENISLIK-174, 10, "S", NM if game.ses_acik else K):
+        if _ikon_btn(GENISLIK-42, 10, game.ikonlar["menu"]): game.drm = "menu"; audio.muzik_durdur(); save.kaydet()
+        if _ikon_btn(GENISLIK-174, 10, game.ikonlar["ses_acik" if game.ses_acik else "ses_kapali"]):
             game.ses_acik = not game.ses_acik
             audio.sfx_ses_ayarla()
-        if ui.disket(GENISLIK-218, 10):
+        if _ikon_btn(GENISLIK-218, 10, game.ikonlar["kaydet"]):
             save.kaydet()
 
         # Can bar

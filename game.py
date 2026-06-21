@@ -97,3 +97,4 @@ ayar = {"z": "orta", "te": False, "ses": 50, "lobi_ses": 50}
 
 envanter = []
 aktif_k = None
+ikonlar = {}
