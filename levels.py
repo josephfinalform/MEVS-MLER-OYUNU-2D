@@ -68,14 +68,18 @@ def lv_yukle(m, rnd=1):
             tx = p.x + random.randint(20, p.w - 60)
             game.tzl.append(pygame.Rect(tx, p.top - 20, 40, 20))
 
-    # Prismler (2. platformdan basla)
+    # Prismler (2. platformdan basla, tuzak olan platforma koyma)
     prism_aded = min(4 + rnd // 2, 10)
     for i in range(prism_aded):
         pi = i + 2
         if pi < len(game.plt):
-            px = game.plt[pi].centerx + random.randint(-30, 30)
-            py = game.plt[pi].top - 30
-            game.prl.append((px, py))
+            p = game.plt[pi]
+            px = p.centerx + random.randint(-30, 30)
+            py = p.top - 30
+            # Bu platformda tuzak var mi
+            tuzak_var = any(t.colliderect(pygame.Rect(p.x, p.top - 20, p.w, 40)) for t in game.tzl)
+            if not tuzak_var:
+                game.prl.append((px, py))
 
     # Dusmanlar (buyuk platformlara, 3. platformdan basla)
     dusman_aded = min(1 + rnd // 3, 5)
@@ -94,7 +98,7 @@ def lv_yukle(m, rnd=1):
     # Level metadata
     game.lvl = {"d": m, "pu": [], "wp": []}
 
-    # Power-uplar (her levelde en az 2 tane, tuzak ustune koyma)
+    # Power-uplar (her levelde en az 2 tane, tuzak olan platforma koyma)
     pu_sayisi = min(2 + rnd // 4, len(game.plt) - 2)
     for pi2 in range(pu_sayisi):
         put = random.choice(["hiz", "kalkan", "cift_zipla", "miknatis", "kalp"])
@@ -102,19 +106,16 @@ def lv_yukle(m, rnd=1):
         if idx < len(game.plt):
             p = game.plt[idx]
             px, py = p.centerx, p.top - 30
-            # Tuzak var mi kontrol
-            carpisma = False
-            for t in game.tzl:
-                if t.collidepoint(px, py):
-                    carpisma = True
-                    break
-            if not carpisma:
+            tuzak_var = any(t.colliderect(pygame.Rect(p.x, p.top - 20, p.w, 40)) for t in game.tzl)
+            if not tuzak_var:
                 game.lvl["pu"].append((px, py, put))
 
-    # Mermi paketi
+    # Mermi paketi (tuzak olan platforma koyma)
     if len(game.plt) > 1:
-        p = game.plt[random.randint(1, len(game.plt) - 1)]
-        game.lvl["wp"].append((p.centerx, p.top - 20))
+        temiz_plt = [p for i, p in enumerate(game.plt) if i > 0 and not any(t.colliderect(pygame.Rect(p.x, p.top - 20, p.w, 40)) for t in game.tzl)]
+        if temiz_plt:
+            p = random.choice(temiz_plt)
+            game.lvl["wp"].append((p.centerx, p.top - 20))
 
     # Boss round (once platformlari degistir ki checkpoint dogru olsun)
     if bos_round:
