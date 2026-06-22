@@ -1,14 +1,38 @@
+"""JSON-based save/load system for game progress."""
+
+from __future__ import annotations
+
 import json
 import os
+from typing import Any
+
 import game
 
-DOSYA = "save.json"
+DOSYA: str = "save.json"
+
+# Type alias for the save data dict
+SaveData = dict[str, Any]
 
 
-def kaydet():
+def _read_save() -> SaveData | None:
+    """Read save file contents, return None if missing."""
+    if not os.path.exists(DOSYA):
+        return None
+    with open(DOSYA) as f:
+        return json.load(f)
+
+
+def _write_save(data: SaveData) -> None:
+    """Write save data to file."""
+    with open(DOSYA, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def kaydet() -> None:
+    """Persist current game state to save.json."""
     import audio
     game.ses_pos = audio.muzik_pozisyon()
-    data = {
+    data: SaveData = {
         "si": game.si,
         "mv": game.mv,
         "rnd": game.rnd,
@@ -19,15 +43,15 @@ def kaydet():
         "ayar": game.ayar,
         "ses_pos": game.ses_pos,
     }
-    with open(DOSYA, "w") as f:
-        json.dump(data, f, indent=2)
+    _write_save(data)
 
 
-def yukle():
-    if not os.path.exists(DOSYA):
+def yukle() -> bool:
+    """Restore game state from save.json. Returns True if loaded."""
+    data = _read_save()
+    if data is None:
         return False
-    with open(DOSYA) as f:
-        data = json.load(f)
+
     game.si = data.get("si", 0)
     game.mv = data.get("mv", game.mv)
     game.rnd = data.get("rnd", 1)
@@ -36,14 +60,16 @@ def yukle():
     game.aktif_k = data.get("aktif_k", None)
     game.yuksek_puan = data.get("yuksek_puan", {})
     game.ayar.update(data.get("ayar", {}))
-    game.ses_pos = data.get("ses_pos", 0)
+    game.ses_pos = data.get("ses_pos", 0.0)
     return True
 
 
-def var_mi():
+def var_mi() -> bool:
+    """Check if a save file exists."""
     return os.path.exists(DOSYA)
 
 
-def sil():
+def sil() -> None:
+    """Delete the save file."""
     if os.path.exists(DOSYA):
         os.remove(DOSYA)
