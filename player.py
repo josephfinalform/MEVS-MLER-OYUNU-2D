@@ -1,10 +1,11 @@
-"""Character rendering: body, physics, weapons, costumes."""
+"""Character rendering: animated armored character from char.png + wizard fallback."""
 
 from __future__ import annotations
 
 import math
 import random
 from typing import Optional
+from pathlib import Path
 
 import pygame
 
@@ -12,258 +13,288 @@ import assets
 import game
 import particles
 
-# ── Constants ────────────────────────────────────────────────────
-MEME_K = 0.3
-MEME_D = 0.6
-GOT_K = 0.4
-GOT_D = 0.7
+# ── Physics constants ────────────────────────────────────────────
+AYAK_K = 0.35
+AYAK_D = 0.55
 
-CHAR: Optional[pygame.Surface] = None
 _onceki_oy: float = 0.0
 _onceki_yr: bool = True
 
+# ── Character sprite parts (extracted from char.png) ─────────────
+_body_surf: Optional[pygame.Surface] = None
+_body_surf_f: Optional[pygame.Surface] = None
+_left_leg_surf: Optional[pygame.Surface] = None
+_left_leg_surf_f: Optional[pygame.Surface] = None
+_right_leg_surf: Optional[pygame.Surface] = None
+_right_leg_surf_f: Optional[pygame.Surface] = None
+_leg_composite: Optional[pygame.Surface] = None
+_shadow_surf: Optional[pygame.Surface] = None
+_leg_h: int = 18
 
-def _yukle_char() -> None:
-    """Lazy-load wizard overlay sprite."""
-    global CHAR
-    if CHAR is not None:
-        return
-    try:
-        CHAR = pygame.image.load(str(assets.config.KAYNAK / "char.png")).convert_alpha()
-    except Exception:
-        CHAR = None
+# ── Animation state ──────────────────────────────────────────────
+_anim_time: float = 0.0
+_walk_frame: int = 0
+_gesture_timer: int = 0
+_gesture_type: int = 0  # 0=none, 1=wave, 2=point, 3=both_up
+_blink_timer: int = 0
 
 
-class KrkFizik:
-    """Spring-mass-damper physics for breast/buttock jiggle."""
+class AyakFizik:
+    """Spring-mass-damper physics for foot jiggle and landing impact."""
 
     def __init__(self) -> None:
-        self.msx: float = 0.0
-        self.msy: float = 0.0
-        self.mxv: float = 0.0
-        self.myv: float = 0.0
-        self.gsx: float = 0.0
-        self.gsy: float = 0.0
-        self.gv: float = 0.0
-        self.sf: float = 0.0
-        self.kb: float = 0.0
+        self.sol_y: float = 0.0
+        self.sol_vy: float = 0.0
+        self.sag_y: float = 0.0
+        self.sag_vy: float = 0.0
+        self.sol_x: float = 0.0
+        self.sol_vx: float = 0.0
+        self.sag_x: float = 0.0
+        self.sag_vx: float = 0.0
+        self.yer: bool = True
+        self.dusme_hizi: float = 0.0
+        self.basma_mesafesi: float = 0.0
 
-    def guncelle(self, hizlanma: float) -> None:
-        """Step physics simulation for one frame."""
-        self.mxv += (hizlanma * 0.3 - self.msx) * 0.05
-        self.msx += self.mxv
-        self.msx *= 0.9
-        self.myv += (-self.msy * MEME_K - self.myv * MEME_D) * 0.1
-        self.myv += abs(hizlanma) * 0.02
-        self.msy += self.myv
+    def guncelle(self, ivme: float, ziplama: bool, yr: bool) -> None:
+        self.yer = yr
+        hedef_y = 0.0 if yr else 4.0
 
-        self.gv += (-self.gsy * GOT_K - self.gv * GOT_D) * 0.1
-        self.gv += abs(hizlanma) * 0.03
-        self.gsy += self.gv
+        if not yr:
+            self.sol_vy += (hedef_y - self.sol_y) * 0.08
+            self.sol_vy += abs(ivme) * 0.01
+            self.sol_y += self.sol_vy
+            self.sag_vy += (hedef_y - self.sag_y) * 0.08
+            self.sag_vy += abs(ivme) * 0.01
+            self.sag_y += self.sag_vy
+        else:
+            self.sol_vy += (-self.sol_y * AYAK_K - self.sol_vy * AYAK_D) * 0.15
+            self.sol_vy += abs(ivme) * 0.04
+            self.sol_y += self.sol_vy
+            self.sag_vy += (-self.sag_y * AYAK_K - self.sag_vy * AYAK_D) * 0.15
+            self.sag_vy += abs(ivme) * 0.04
+            self.sag_y += self.sag_vy
 
-        self.sf += 0.08
-        self.kb = max(0.0, self.kb - 0.05)
+        self.sol_vx += (-self.sol_x * 0.3 - self.sol_vx * 0.6) * 0.1
+        self.sol_vx += ivme * 0.02
+        self.sol_x += self.sol_vx
+        self.sag_vx += (-self.sag_x * 0.3 - self.sag_vx * 0.6) * 0.1
+        self.sag_vx += ivme * 0.02
+        self.sag_x += self.sag_vx
 
+        self.sol_x *= 0.92
+        self.sag_x *= 0.92
 
-fizik = KrkFizik()
+        self.basma_mesafesi = max(0.0, self.basma_mesafesi - 0.08)
 
-
-def _ciz_kafa(sx: float, sy: float) -> None:
-    """Draw character head: face, nose, eyebrows, mouth."""
-    ek = game.ekran
-    # Head shape
-    pygame.draw.ellipse(ek, assets.TEN, (sx - 13, sy - 46, 26, 36))
-    pygame.draw.ellipse(ek, (245, 210, 195), (sx - 12, sy - 40, 12, 16))
-    pygame.draw.ellipse(ek, (245, 210, 195), (sx + 1, sy - 40, 12, 16))
-    # Eyelashes
-    pygame.draw.line(ek, (240, 195, 180), (sx - 9, sy - 28), (sx - 4, sy - 30), 1)
-    pygame.draw.line(ek, (240, 195, 180), (sx + 4, sy - 30), (sx + 9, sy - 28), 1)
-    pygame.draw.arc(ek, (230, 190, 175), (sx - 11, sy - 18, 22, 12), 0.1, 3.0, 1)
-
-    # Nose
-    pygame.draw.line(ek, (225, 185, 165), (sx, sy - 24), (sx, sy - 19), 1)
-    pygame.draw.circle(ek, (220, 180, 160), (sx, sy - 19), 1)
-    pygame.draw.line(ek, (230, 190, 170), (sx - 1, sy - 22), (sx - 3, sy - 21), 1)
-    pygame.draw.line(ek, (230, 190, 170), (sx + 1, sy - 22), (sx + 3, sy - 21), 1)
-
-    # Eyebrows
-    pygame.draw.line(ek, (180, 120, 140), (sx - 10, sy - 43), (sx - 2, sy - 44), 2)
-    pygame.draw.line(ek, (180, 120, 140), (sx + 2, sy - 44), (sx + 10, sy - 43), 2)
-
-    # Mouth
-    if game.yr and abs(game.hx) < 0.5:
-        pygame.draw.arc(ek, (220, 170, 160), (sx - 5, sy - 24, 10, 7), 0.1, 3.0, 2)
-    else:
-        pygame.draw.arc(ek, (210, 160, 150), (sx - 4, sy - 22, 8, 5), 0, 3.14, 2)
-        pygame.draw.line(ek, (190, 140, 130), (sx - 5, sy - 23), (sx + 5, sy - 23), 2)
-        pygame.draw.line(ek, (180, 130, 120), (sx, sy - 22), (sx, sy - 21), 1)
-    pygame.draw.line(ek, (230, 190, 180), (sx - 2, sy - 20), (sx + 2, sy - 20), 1)
+        if self.dusme_hizi > 0:
+            self.basma_mesafesi = min(6.0, self.dusme_hizi * 0.8)
+            self.dusme_hizi = 0.0
 
 
-def _ciz_gozler(sx: float, sy: float) -> None:
-    """Draw eyes with iris, blink animation, and highlights."""
-    ek = game.ekran
-    ga = game.gk % 180 > 5
-    if not ga:
-        pygame.draw.line(ek, (40, 40, 40), (sx - 10, sy - 35), (sx - 1, sy - 35), 2)
-        pygame.draw.line(ek, (40, 40, 40), (sx + 1, sy - 35), (sx + 10, sy - 35), 2)
+ayak_fizik = AyakFizik()
+
+
+# ═══════════════════════════════════════════════════════════════════
+# CHARACTER SPRITE LOADING (char.png → body parts)
+# ═══════════════════════════════════════════════════════════════════
+def karakter_yukle() -> bool:
+    """Load char.png and extract body/leg surfaces. Returns True on success."""
+    global _body_surf, _body_surf_f, _left_leg_surf, _left_leg_surf_f
+    global _right_leg_surf, _right_leg_surf_f, _leg_composite, _leg_h
+    global _shadow_surf
+
+    path = Path(__file__).parent / "char.png"
+    if not path.exists():
+        print("char.png bulunamadi - wizard fallback kullanilacak")
+        return False
+
+    try:
+        sprite = pygame.image.load(str(path)).convert_alpha()
+    except Exception:
+        return False
+
+    w, h = sprite.get_size()  # 42 x 75
+    _leg_h = h - 57  # rows 57-74
+
+    # Surface for upper body (rows 0-56)
+    _body_surf = pygame.Surface((w, 57), pygame.SRCALPHA)
+    _body_surf.blit(sprite, (0, 0), (0, 0, w, 57))
+
+    # Surfaces for left / right leg (rows 57-74)
+    _left_leg_surf = pygame.Surface((w, _leg_h), pygame.SRCALPHA)
+    _right_leg_surf = pygame.Surface((w, _leg_h), pygame.SRCALPHA)
+
+    for y in range(57, h):
+        for x in range(w):
+            c = sprite.get_at((x, y))
+            if c.a > 20:
+                ly = y - 57
+                if x < w // 2:
+                    _left_leg_surf.set_at((x, ly), c)
+                else:
+                    _right_leg_surf.set_at((x, ly), c)
+
+    # Pre-create flipped versions and composite surface
+    _body_surf_f = pygame.transform.flip(_body_surf, True, False)
+    _left_leg_surf_f = pygame.transform.flip(_left_leg_surf, True, False)
+    _right_leg_surf_f = pygame.transform.flip(_right_leg_surf, True, False)
+    _leg_composite = pygame.Surface((w, _leg_h), pygame.SRCALPHA)
+    _shadow_surf = pygame.Surface((20, 6), pygame.SRCALPHA)
+
+    print(f"Karakter yuklendi: {w}x{h}")
+    return True
+
+
+# ═══════════════════════════════════════════════════════════════════
+# ANIMATED CHARACTER RENDERER (char.png based)
+# ═══════════════════════════════════════════════════════════════════
+def _ciz_karakter(sx: float, sy: float, yon: int) -> None:
+    """Draw the animated armored character at (sx,sy) facing yon."""
+    if _body_surf is None:
         return
 
-    pygame.draw.ellipse(ek, assets.B, (sx - 11, sy - 39, 11, 9))
-    pygame.draw.ellipse(ek, assets.B, (sx + 1, sy - 39, 11, 9))
-    pygame.draw.ellipse(ek, (250, 250, 255), (sx - 10, sy - 38, 9, 7))
-    pygame.draw.ellipse(ek, (250, 250, 255), (sx + 2, sy - 38, 9, 7))
-
-    # Iris
-    for off in [-5, 5]:
-        cx = sx + off
-        cy = sy - 35
-        pygame.draw.circle(ek, (255, 220, 50), (cx, cy), 5)
-        pygame.draw.circle(ek, (255, 160, 30), (cx, cy), 5, 1)
-        for i in range(4):
-            a_s = i * 1.57
-            pygame.draw.line(ek, (255, 180, 40),
-                             (cx + int(math.cos(a_s) * 3), cy + int(math.sin(a_s) * 3)),
-                             (cx + int(math.cos(a_s) * 4), cy + int(math.sin(a_s) * 4)), 1)
-        pygame.draw.circle(ek, assets.S, (cx, cy), 2)
-        pygame.draw.circle(ek, (255, 255, 255), (cx - 2, cy - 2), 1)
-
-    # Lashes
-    for i, kx in enumerate([-11, -9, 9, 11]):
-        kys = -39 if i < 2 else -39
-        ky2 = -42 + i * 0.5 if i < 2 else -42 + (i - 2) * 0.5
-        pygame.draw.line(ek, (30, 30, 30), (sx + kx, sy + kys), (sx + kx - 1 + i * 0.5, sy + ky2), 1)
-    for kx in [-8, -4, 4, 8]:
-        pygame.draw.line(ek, (60, 60, 60), (sx + kx, sy - 31), (sx + kx - 0.5, sy - 29), 1)
-
-
-def _ciz_govde(sx: float, sy: float) -> None:
-    """Draw torso, neck, belt, and shirt details."""
     ek = game.ekran
-    # Neck
-    pygame.draw.rect(ek, assets.TEN, (sx - 4, sy - 14, 8, 6))
-    pygame.draw.line(ek, (220, 180, 165), (sx - 3, sy - 14), (sx - 3, sy - 9), 1)
-    pygame.draw.line(ek, (220, 180, 165), (sx + 3, sy - 14), (sx + 3, sy - 9), 1)
-    pygame.draw.line(ek, (215, 175, 160), (sx - 6, sy - 8), (sx + 6, sy - 8), 1)
+    w = _body_surf.get_width()
+    body_h = 57
 
-    # Torso
-    pygame.draw.rect(ek, (240, 235, 225), (sx - 13, sy - 10, 26, 28), border_radius=2)
-    for i in range(3):
-        yy = sy - 6 + i * 8
-        pygame.draw.line(ek, (235, 230, 220), (sx - 10, yy), (sx + 10, yy), 1)
-    pygame.draw.rect(ek, (215, 210, 200), (sx - 13, sy - 10, 26, 28), 1, border_radius=2)
+    # ── Animation parameters ──
+    hiz = game.hx
+    yerde = game.yr
+    anim = game.sz
 
-    # Collar
-    pygame.draw.polygon(ek, (230, 225, 215), [(sx - 5, sy - 10), (sx - 9, sy - 3), (sx, sy - 4)])
-    pygame.draw.polygon(ek, (230, 225, 215), [(sx + 5, sy - 10), (sx + 9, sy - 3), (sx, sy - 4)])
-    pygame.draw.polygon(ek, (220, 215, 205), [(sx - 5, sy - 10), (sx - 9, sy - 3), (sx, sy - 4)], 1)
-    pygame.draw.polygon(ek, (220, 215, 205), [(sx + 5, sy - 10), (sx + 9, sy - 3), (sx, sy - 4)], 1)
+    # Foot physics offsets
+    ayak_fizik.guncelle(hiz, not yerde, yerde)
+    foot_bounce = (ayak_fizik.sol_y + ayak_fizik.sag_y) * 0.3
+    foot_lean = (ayak_fizik.sol_x + ayak_fizik.sag_x) * 0.2
 
-    # Belt
-    pygame.draw.polygon(ek, (15, 15, 15), [(sx - 2, sy - 4), (sx + 2, sy - 4), (sx + 1, sy + 6), (sx, sy + 10), (sx - 1, sy + 6)])
-    pygame.draw.polygon(ek, (30, 30, 30), [(sx - 2, sy - 4), (sx + 2, sy - 4), (sx + 1, sy + 6), (sx, sy + 10), (sx - 1, sy + 6)], 1)
-    pygame.draw.line(ek, (40, 40, 40), (sx, sy - 3), (sx, sy + 4), 1)
-    pygame.draw.circle(ek, (200, 200, 200), (sx, sy + 2), 1)
+    # Idle bob
+    idle_bob = math.sin(anim * 2) * 1.5 if abs(hiz) < 0.5 else 0
 
-    # Buttons
-    for i in range(4):
-        yy = sy - 4 + i * 6
-        pygame.draw.circle(ek, (210, 205, 195), (sx, yy), 1)
-        pygame.draw.circle(ek, (225, 220, 210), (sx - 1, yy - 1), 1)
+    # Walk cycle (6-frame)
+    walk_speed = 8 if abs(hiz) > 4 else 6
+    phase = anim * walk_speed
+    left_leg_off = int(round(5 * math.sin(phase))) if abs(hiz) > 0.8 else 0
+    right_leg_off = int(round(5 * math.sin(phase + math.pi))) if abs(hiz) > 0.8 else 0
+    walk_bob = abs(int(round(2 * math.sin(phase)))) if abs(hiz) > 0.8 else 0
 
-    # Sides
-    pygame.draw.line(ek, (230, 225, 215), (sx - 12, sy + 6), (sx - 16, sy + 12), 1)
-    pygame.draw.line(ek, (230, 225, 215), (sx + 12, sy + 6), (sx + 16, sy + 12), 1)
-
-
-def _ciz_memeler(sx: float, sy: float) -> None:
-    """Draw breast physics."""
-    ek = game.ekran
-    mx_l = sx - 9 + fizik.msx
-    my_l = sy - 4 + abs(fizik.msy) * 2
-    mx_r = sx + 9 + fizik.msx
-    my_r = sy - 4 + abs(fizik.msy) * 2
-    renk = (240, 235, 225)
-    for cx, cy in [(mx_l, my_l), (mx_r, my_r)]:
-        pygame.draw.ellipse(ek, renk, (cx - 5, cy - 4, 10, 12))
-        pygame.draw.ellipse(ek, (250, 245, 235), (cx - 4, cy - 3, 8, 10))
-        pygame.draw.ellipse(ek, (230, 225, 215), (cx - 3, cy - 1, 6, 8))
-
-
-def _ciz_pacalar(sx: float, sy: float, yon: int, iv: pygame.Vector2) -> None:
-    """Draw legs with walking animation."""
-    ek = game.ekran
-
-    if not game.yr:
-        ba = 0.0
-        syk = -6.0
-        sagk = -6.0
-    elif abs(game.hx) > 1:
-        ba = math.sin(game.sz * 8) * 30 * yon
-        syk = abs(math.sin(game.sz * 8)) * 6
-        sagk = abs(math.cos(game.sz * 8)) * 6
+    # Jump squash/stretch
+    if not yerde:
+        jump_squash = max(-4, min(4, int(game.hy * 0.3)))
+        body_h_adj = jump_squash
+        leg_tuck = game.hy * 0.2 if game.hy < 0 else 0
     else:
-        ba = iv.x * 3
-        syk = iv.x * 0.5
-        sagk = -iv.x * 0.5
+        body_h_adj = 0
+        leg_tuck = 0
 
-    sol_x = sx - 9 + ba * 0.08
-    sag_x = sx + 2 - ba * 0.08
+    # Landing impact
+    landing_squash = int(ayak_fizik.basma_mesafesi * 0.5)
 
-    # Legs
-    pygame.draw.rect(ek, (15, 15, 22), (sol_x, sy + 22 + syk, 9, 16))
-    pygame.draw.rect(ek, (15, 15, 22), (sag_x, sy + 22 + sagk, 9, 16))
-    for x_off, y_off in [(sol_x, syk), (sag_x, sagk)]:
-        pygame.draw.line(ek, (25, 25, 32), (x_off + 4, sy + 24 + y_off), (x_off + 4, sy + 36 + y_off), 1)
-        pygame.draw.line(ek, (20, 20, 28), (x_off + 1, sy + 26 + y_off), (x_off + 7, sy + 28 + y_off), 1)
-        pygame.draw.line(ek, (30, 30, 38), (x_off, sy + 22 + y_off), (x_off, sy + 38 + y_off), 1)
+    total_squash = body_h_adj - landing_squash
 
-    # Buttocks
-    got_y = sy + 20 + abs(fizik.gsy) * 3
-    for x_off in [sol_x, sag_x]:
-        pygame.draw.ellipse(ek, (20, 20, 30), (x_off - 2, got_y - 3, 12, 10))
-        pygame.draw.ellipse(ek, (30, 30, 40), (x_off - 1, got_y - 2, 10, 8))
+    # ── Base position ──
+    base_x = int(sx - w // 2 + foot_lean)
+    base_y = int(sy - 45 + idle_bob + foot_bounce + total_squash * 0.5)
 
-    # Shoes
-    for x_off, y_off in [(sol_x, syk), (sag_x, sagk)]:
-        pygame.draw.ellipse(ek, (100, 60, 35), (x_off - 4, sy + 36 + y_off, 14, 8))
-        pygame.draw.ellipse(ek, (120, 75, 45), (x_off - 3, sy + 37 + y_off, 12, 6))
-        pygame.draw.rect(ek, (60, 35, 20), (x_off - 4, sy + 42 + y_off, 14, 3))
-        pygame.draw.line(ek, (50, 25, 15), (x_off - 2, sy + 43 + y_off), (x_off + 8, sy + 43 + y_off), 1)
-        for si in range(3):
-            pygame.draw.circle(ek, (50, 30, 15), (x_off + si * 3 - 1, sy + 38 + y_off), 1)
-        pygame.draw.line(ek, (50, 30, 15), (x_off + 1, sy + 37 + y_off), (x_off + 4, sy + 40 + y_off), 1)
-        pygame.draw.line(ek, (140, 90, 55), (x_off - 1, sy + 38 + y_off), (x_off + 5, sy + 38 + y_off), 1)
+    # Flip for direction
+    flip_x = yon < 0
 
+    # ── Draw body (upper torso, rows 0-56) ──
+    body = _body_surf_f if flip_x else _body_surf
 
-def _ciz_kollar(sx: float, sy: float, yon: int) -> None:
-    """Draw arms and weapon."""
-    ek = game.ekran
-    wd_cd = assets.WP_DATA[game.mv].cooldown if game.weapon else 10
-    geri_tepme = (wd_cd - game.shoot_cd) / wd_cd if game.shoot_cd > 0 else 0
-    geri_tepme = max(0.0, min(1.0, geri_tepme))
-    kol_sag = math.sin(game.sz * 6) * 3 if abs(game.hx) > 1 else 0
-    kol_sag += geri_tepme * 8 * yon
+    body_draw_y = base_y - total_squash
+    ek.blit(body, (base_x, body_draw_y))
 
+    # ── Draw legs ──
+    _leg_composite.fill((0, 0, 0, 0))
+    _leg_composite.blit(_left_leg_surf, (left_leg_off + foot_lean, 0), None)
+    _leg_composite.blit(_right_leg_surf, (right_leg_off + foot_lean, 0), None)
+    out_legs = pygame.transform.flip(_leg_composite, True, False) if flip_x else _leg_composite
+
+    leg_draw_y = base_y + body_h - total_squash
+    if not yerde and game.hy < 0:
+        leg_draw_y += int(leg_tuck)
+    ek.blit(out_legs, (base_x, leg_draw_y))
+
+    # ── Hand gestures ──
+    global _gesture_timer, _gesture_type
+    if _gesture_timer > 0:
+        _gesture_timer -= 1
+        _ciz_el_animasyonu(ek, sx, sy, yon, _gesture_type)
+    else:
+        _gesture_type = 0
+        # Random gesture trigger when idle
+        if yerde and abs(hiz) < 0.5 and random.random() < 0.002:
+            _gesture_type = random.randint(1, 3)
+            _gesture_timer = 30
+
+    # ── Shadow ──
+    _shadow_surf.fill((0, 0, 0, 0))
+    alpha = max(30, 60 - abs(game.hy) * 2)
+    pygame.draw.ellipse(_shadow_surf, (0, 0, 0, alpha),
+                        (0, 0, 20, 6))
+    ek.blit(_shadow_surf, (int(sx - 10), int(sy + 40)))
+
+    # ── Weapon ──
     if game.weapon:
-        # Upper arms
-        pygame.draw.line(ek, (240, 235, 225), (sx - 15, sy - 8), (sx - 28 + kol_sag, sy + 2), 5)
-        pygame.draw.line(ek, (240, 235, 225), (sx + 15, sy - 8), (sx + 26 - kol_sag, sy + 2), 5)
-        pygame.draw.line(ek, (225, 220, 210), (sx - 15, sy - 7), (sx - 27 + kol_sag, sy + 3), 1)
-        pygame.draw.line(ek, (225, 220, 210), (sx + 15, sy - 7), (sx + 25 - kol_sag, sy + 3), 1)
-        pygame.draw.line(ek, (220, 215, 205), (sx - 27 + kol_sag, sy), (sx - 27 + kol_sag, sy + 4), 2)
-        pygame.draw.line(ek, (220, 215, 205), (sx + 25 - kol_sag, sy), (sx + 25 - kol_sag, sy + 4), 2)
-
         _ciz_silah(sx, sy, yon)
+
+    # ── Costume overlay ──
+    _ciz_kostum(sx, sy)
+
+    # ── Magic effect ──
+    _ciz_magic_effect(sx, sy)
+
+
+def _ciz_el_animasyonu(ek: pygame.Surface, sx: float, sy: float,
+                       yon: int, gtype: int) -> None:
+    """Draw hand gesture overlays (wave, point, both up)."""
+    base_y = int(sy - 10)
+    hand_color = (210, 180, 180)
+    skin_d = (130, 70, 70)
+
+    if yon < 0:
+        dir_mul = -1
     else:
-        pygame.draw.line(ek, (240, 235, 225), (sx - 15, sy - 8), (sx - 22 + kol_sag, sy + 6), 5)
-        pygame.draw.line(ek, (240, 235, 225), (sx + 15, sy - 8), (sx + 22 - kol_sag, sy + 6), 5)
-        pygame.draw.line(ek, (225, 220, 210), (sx - 15, sy - 7), (sx - 21 + kol_sag, sy + 7), 1)
-        pygame.draw.line(ek, (225, 220, 210), (sx + 15, sy - 7), (sx + 21 - kol_sag, sy + 7), 1)
-        pygame.draw.line(ek, (220, 215, 205), (sx - 21 + kol_sag, sy + 4), (sx - 21 + kol_sag, sy + 8), 2)
-        pygame.draw.line(ek, (220, 215, 205), (sx + 21 - kol_sag, sy + 4), (sx + 21 - kol_sag, sy + 8), 2)
+        dir_mul = 1
+
+    if gtype == 1:
+        # Wave - right hand up
+        hx = int(sx + 18 * dir_mul)
+        hy = base_y - 12
+        for dy in range(5):
+            for dx in range(3):
+                ek.set_at((hx + dx, hy + dy), hand_color)
+        # Fingers spread
+        for f in range(3):
+            fx = hx + f * 1
+            fy = hy - 2
+            ek.set_at((fx + 1, fy), skin_d)
+            ek.set_at((fx, fy), hand_color)
+
+    elif gtype == 2:
+        # Point - arm extended, index finger pointing
+        hx = int(sx + 24 * dir_mul)
+        hy = base_y
+        for dy in range(4):
+            for dx in range(3):
+                ek.set_at((hx + dx, hy + dy), hand_color)
+        # Index finger
+        for fx in range(4):
+            ek.set_at((hx + 3 + fx * dir_mul, hy + 1), hand_color)
+
+    elif gtype == 3:
+        # Both arms up
+        for side, x_off in [(-1, -18), (1, 18)]:
+            hx = int(sx + x_off)
+            hy = base_y - 14
+            for dy in range(4):
+                for dx in range(3):
+                    ek.set_at((hx + dx, hy + dy), hand_color)
 
 
+# ═══════════════════════════════════════════════════════════════════
+# WEAPON DRAWING (unchanged from original, slightly adapted)
+# ═══════════════════════════════════════════════════════════════════
 def _ciz_silah(sx: float, sy: float, yon: int) -> None:
     """Draw biome-themed weapon sprite."""
     ek = game.ekran
@@ -274,14 +305,11 @@ def _ciz_silah(sx: float, sy: float, yon: int) -> None:
     c = assets.WP_DATA[m].color
 
     if m == "ilkbahar":
-        # Body
         pygame.draw.rect(ek, (60, 80, 60), (w_x, w_y - 3, 30 * w_yon, 6))
         pygame.draw.rect(ek, (80, 110, 80), (w_x, w_y - 3, 30 * w_yon, 6), 1)
         pygame.draw.rect(ek, (100, 140, 100), (w_x + 28 * w_yon, w_y - 4, 6 * w_yon, 8))
-        # Muzzle
         pygame.draw.circle(ek, (255, 220, 180), (w_x + 31 * w_yon, w_y), 4)
         pygame.draw.circle(ek, (255, 200, 50), (w_x + 31 * w_yon, w_y), 2)
-        # Grip
         pygame.draw.rect(ek, (50, 70, 50), (w_x - 4 * w_yon, w_y - 5, 12 * w_yon, 10))
         pygame.draw.rect(ek, (70, 90, 70), (w_x - 4 * w_yon, w_y - 5, 12 * w_yon, 10), 1)
         mag_x = w_x + 2 * w_yon
@@ -290,13 +318,11 @@ def _ciz_silah(sx: float, sy: float, yon: int) -> None:
         pygame.draw.polygon(ek, (50, 80, 50), [(w_x + 6 * w_yon, w_y + 5), (w_x + 10 * w_yon, w_y + 5), (w_x + 8 * w_yon, w_y + 16)])
         pygame.draw.rect(ek, (50, 70, 40), (w_x - 10 * w_yon, w_y - 5, 8 * w_yon, 10))
         pygame.draw.rect(ek, (70, 90, 60), (w_x - 10 * w_yon, w_y - 5, 8 * w_yon, 10), 1)
-        # Flowers
         for ci in range(3):
             cx = int(w_x + (ci * 10 - 5) * w_yon)
             cy = int(w_y - 6 + ci * 6)
             pygame.draw.circle(ek, (255, 220, 200), (cx, cy), 3)
             pygame.draw.circle(ek, (255, 200, 50), (cx, cy), 1)
-        # Vines
         for vi in range(4):
             vx = int(w_x + vi * 7 * w_yon)
             pygame.draw.line(ek, (60, 140, 60), (vx, w_y - 4), (vx - 2 * w_yon, w_y + 6 + vi * 2), 1)
@@ -376,6 +402,9 @@ def _ciz_silah(sx: float, sy: float, yon: int) -> None:
         pygame.draw.circle(ek, (255, 255, 255), (int(w_x + 32 * w_yon), int(w_y)), 3)
 
 
+# ═══════════════════════════════════════════════════════════════════
+# COSTUME OVERLAY (unchanged)
+# ═══════════════════════════════════════════════════════════════════
 def _ciz_kostum(sx: float, sy: float) -> None:
     """Draw equipped costume overlay."""
     ek = game.ekran
@@ -410,14 +439,295 @@ def _ciz_kostum(sx: float, sy: float) -> None:
             pygame.draw.line(ek, assets.ALTIN, (sx + dx, sy - 36 + dy), (sx + dx2, sy - 36 + dy2), 1)
 
 
-def ciz_krk(x: float, y: float, yn: int, yy: float = 0.0) -> None:
-    """Draw the full player character at (x, y) facing yn.
+# ═══════════════════════════════════════════════════════════════════
+# MAGIC EFFECT (unchanged)
+# ═══════════════════════════════════════════════════════════════════
+def _ciz_magic_effect(sx: float, sy: float) -> None:
+    """Wizard magic aura particles."""
+    ek = game.ekran
+    for i in range(3):
+        a = game.sz * 0.5 + i * 2.1
+        r = 30 + math.sin(game.sz * 0.3 + i) * 5
+        px = sx + math.cos(a) * r
+        py = sy - 20 + math.sin(a) * r * 0.5
+        s = pygame.Surface((6, 6), pygame.SRCALPHA)
+        c = (100, 200, 255, 100 - i * 30)
+        pygame.draw.circle(s, c, (3, 3), 3)
+        ek.blit(s, (int(px), int(py)))
+        if i == 0:
+            for _ in range(2):
+                sx2 = sx + math.cos(game.sz * 2 + _ * 3) * r
+                sy2 = sy - 20 + math.sin(game.sz * 2 + _ * 3) * r * 0.4
+                pygame.draw.circle(ek, (255, 215, 0), (int(sx2), int(sy2)), 1)
+                pygame.draw.circle(ek, (255, 255, 200), (int(sx2), int(sy2)), 1, 1)
 
-    Args:
-        x: World X position.
-        y: World Y position.
-        yn: Facing direction (positive = right).
-        yy: Vertical offset (for bounce/damage shake).
+
+# ═══════════════════════════════════════════════════════════════════
+# WIZARD SPRITE RENDERER (original, kept as fallback)
+# ═══════════════════════════════════════════════════════════════════
+def _ciz_sapka(sx: float, sy: float, yon: int) -> None:
+    ek = game.ekran
+    cone_pts = [(sx - 16, sy - 54), (sx + 16, sy - 54), (sx, sy - 100)]
+    pygame.draw.polygon(ek, (45, 35, 85), cone_pts)
+    pygame.draw.polygon(ek, (65, 55, 110), cone_pts, 1)
+    for i in range(4):
+        yy = sy - 60 - i * 9
+        lx = sx - 14 + i * 2
+        rx = sx + 14 - i * 2
+        pygame.draw.arc(ek, (55, 45, 95), (sx - lx, yy - 3, lx * 2, 6), 0, math.pi, 1)
+    for i in range(3):
+        yy = sy - 65 - i * 11
+        random.seed(int(yy))
+        r2 = random.randint(0, 255)
+        pygame.draw.circle(ek, (255, 215, r2), (int(sx + random.randint(-8, 8)), int(yy)), 2)
+        pygame.draw.circle(ek, (255, 255, r2), (int(sx + random.randint(-8, 8)), int(yy)), 1)
+    random.seed()
+    pygame.draw.ellipse(ek, (50, 40, 90), (sx - 24, sy - 56, 48, 12))
+    pygame.draw.ellipse(ek, (70, 60, 115), (sx - 24, sy - 56, 48, 12), 1)
+    pygame.draw.ellipse(ek, (35, 25, 70), (sx - 22, sy - 54, 44, 6))
+    pygame.draw.rect(ek, (120, 90, 50), (sx - 16, sy - 56, 32, 6))
+    pygame.draw.rect(ek, (150, 120, 70), (sx - 16, sy - 56, 32, 6), 1)
+    pygame.draw.rect(ek, (200, 180, 100), (sx - 4, sy - 55, 8, 6))
+    pygame.draw.rect(ek, (255, 220, 50), (sx - 4, sy - 55, 8, 6), 1)
+    pygame.draw.circle(ek, (255, 220, 50), (sx, sy - 52), 2)
+    px = sx + math.sin(game.sz * 0.5) * 2
+    pygame.draw.line(ek, (120, 90, 50), (sx, sy - 100), (px, sy - 112), 2)
+    for i in range(4):
+        a3 = game.sz * 0.3 + i * 1.57
+        pygame.draw.circle(ek, (255, 215, 0), (int(px + math.cos(a3) * 3), int(sy - 112 + math.sin(a3) * 2)), 2)
+        pygame.draw.circle(ek, (255, 255, 200), (int(px + math.cos(a3) * 3), int(sy - 112 + math.sin(a3) * 2)), 1)
+
+
+def _ciz_sac_ve_sakal(sx: float, sy: float) -> None:
+    ek = game.ekran
+    for side in [-1, 1]:
+        for i in range(4):
+            yy = sy - 38 + i * 4
+            xx = sx + side * (13 + i * 1.5)
+            pygame.draw.ellipse(ek, (220, 220, 230), (xx - 2, yy, 5, 12))
+            pygame.draw.ellipse(ek, (190, 190, 200), (xx - 2, yy, 5, 12), 1)
+    for i in range(8):
+        bx = sx - 5 + i * 1.5
+        by = sy - 16 + i * 2
+        bw = 4 + i * 0.5
+        bh = 10 + i * 2
+        pygame.draw.ellipse(ek, (220, 220, 230), (bx, by, bw, bh))
+        pygame.draw.ellipse(ek, (190, 190, 200), (bx, by, bw, bh), 1)
+    pygame.draw.polygon(ek, (220, 220, 230), [(sx - 4, sy + 2), (sx + 4, sy + 2), (sx, sy + 14)])
+    pygame.draw.polygon(ek, (190, 190, 200), [(sx - 4, sy + 2), (sx + 4, sy + 2), (sx, sy + 14)], 1)
+    pygame.draw.arc(ek, (220, 220, 230), (sx - 10, sy - 26, 20, 10), 0.2, 2.9, 2)
+    pygame.draw.arc(ek, (220, 220, 230), (sx - 8, sy - 28, 16, 8), 0.3, 2.8, 2)
+
+
+def _ciz_kafa(sx: float, sy: float) -> None:
+    ek = game.ekran
+    pygame.draw.ellipse(ek, (245, 210, 190), (sx - 14, sy - 46, 28, 38))
+    pygame.draw.ellipse(ek, (235, 200, 180), (sx - 13, sy - 40, 12, 16))
+    pygame.draw.ellipse(ek, (235, 200, 180), (sx + 1, sy - 40, 12, 16))
+    for i in range(3):
+        yy = sy - 30 + i * 6
+        pygame.draw.arc(ek, (220, 185, 165), (sx - 12, yy, 24, 4), 0, 3.14, 1)
+    pygame.draw.line(ek, (220, 185, 165), (sx - 12, sy - 38), (sx - 6, sy - 36), 1)
+    pygame.draw.line(ek, (220, 185, 165), (sx + 6, sy - 36), (sx + 12, sy - 38), 1)
+    pygame.draw.line(ek, (225, 190, 170), (sx, sy - 24), (sx, sy - 18), 2)
+    pygame.draw.circle(ek, (220, 185, 165), (sx, sy - 18), 2)
+    pygame.draw.line(ek, (230, 195, 175), (sx - 1, sy - 22), (sx - 4, sy - 20), 1)
+    pygame.draw.line(ek, (230, 195, 175), (sx + 1, sy - 22), (sx + 4, sy - 20), 1)
+    for off in [-1, 1]:
+        pygame.draw.line(ek, (220, 220, 230), (sx + off * 3 - 8, sy - 44), (sx + off * 3 - 1, sy - 45), 2)
+        pygame.draw.line(ek, (190, 190, 200), (sx + off * 3 - 8, sy - 44), (sx + off * 3 - 1, sy - 45), 1)
+    if game.yr and abs(game.hx) < 0.5:
+        pygame.draw.arc(ek, (210, 160, 150), (sx - 5, sy - 24, 10, 7), 0.1, 3.0, 2)
+    else:
+        pygame.draw.arc(ek, (200, 150, 140), (sx - 4, sy - 22, 8, 5), 0, 3.14, 2)
+        pygame.draw.line(ek, (180, 130, 120), (sx - 5, sy - 23), (sx + 5, sy - 23), 2)
+
+
+def _ciz_gozler(sx: float, sy: float) -> None:
+    ek = game.ekran
+    ga = game.gk % 180 > 5
+    if not ga:
+        pygame.draw.line(ek, (40, 40, 40), (sx - 10, sy - 35), (sx - 1, sy - 35), 2)
+        pygame.draw.line(ek, (40, 40, 40), (sx + 1, sy - 35), (sx + 10, sy - 35), 2)
+        return
+    pygame.draw.ellipse(ek, (255, 255, 240), (sx - 11, sy - 39, 11, 9))
+    pygame.draw.ellipse(ek, (255, 255, 240), (sx + 1, sy - 39, 11, 9))
+    for off in [-5, 5]:
+        cx = sx + off
+        cy = sy - 35
+        pygame.draw.circle(ek, (100, 200, 255), (cx, cy), 5)
+        pygame.draw.circle(ek, (50, 150, 255), (cx, cy), 5, 1)
+        for i in range(4):
+            a_s = i * 1.57 + game.sz * 0.3
+            pygame.draw.line(ek, (150, 220, 255),
+                             (cx + int(math.cos(a_s) * 3), cy + int(math.sin(a_s) * 3)),
+                             (cx + int(math.cos(a_s) * 4), cy + int(math.sin(a_s) * 4)), 1)
+        pygame.draw.circle(ek, (0, 50, 100), (cx, cy), 2)
+        pygame.draw.circle(ek, (255, 255, 255), (cx - 2, cy - 2), 1)
+    for i, kx in enumerate([-11, -9, 9, 11]):
+        kys = -39
+        ky2 = -42 + i * 0.5
+        pygame.draw.line(ek, (30, 30, 30), (sx + kx, sy + kys), (sx + kx - 1 + i * 0.5, sy + ky2), 1)
+
+
+def _ciz_govde(sx: float, sy: float) -> None:
+    ek = game.ekran
+    robe = (60, 50, 100)
+    robe_d = (45, 35, 80)
+    robe_l = (80, 70, 120)
+    pygame.draw.rect(ek, (245, 210, 190), (sx - 4, sy - 14, 8, 6))
+    pygame.draw.line(ek, (220, 185, 170), (sx - 3, sy - 14), (sx - 3, sy - 9), 1)
+    pygame.draw.line(ek, (220, 185, 170), (sx + 3, sy - 14), (sx + 3, sy - 9), 1)
+    pygame.draw.rect(ek, robe, (sx - 18, sy - 10, 36, 34), border_radius=4)
+    pygame.draw.rect(ek, robe_d, (sx - 18, sy - 10, 36, 34), 1, border_radius=4)
+    for i in range(4):
+        yy = sy - 6 + i * 8
+        pygame.draw.line(ek, robe_l, (sx - 12, yy), (sx + 12, yy), 1)
+        pygame.draw.line(ek, robe_d, (sx - 14, yy + 1), (sx + 14, yy + 1), 1)
+    pygame.draw.polygon(ek, robe_d, [(sx - 7, sy - 10), (sx + 7, sy - 10), (sx, sy - 1)])
+    pygame.draw.polygon(ek, (120, 100, 160), [(sx - 7, sy - 10), (sx - 12, sy - 2), (sx, sy - 3)])
+    pygame.draw.polygon(ek, (120, 100, 160), [(sx + 7, sy - 10), (sx + 12, sy - 2), (sx, sy - 3)])
+    pygame.draw.polygon(ek, (50, 40, 30), [(sx - 4, sy - 2), (sx + 4, sy - 2), (sx + 3, sy + 8), (sx, sy + 12), (sx - 3, sy + 8)])
+    pygame.draw.polygon(ek, (70, 60, 50), [(sx - 4, sy - 2), (sx + 4, sy - 2), (sx + 3, sy + 8), (sx, sy + 12), (sx - 3, sy + 8)], 1)
+    pygame.draw.circle(ek, (200, 180, 100), (sx, sy + 3), 3)
+    pygame.draw.circle(ek, (255, 220, 50), (sx, sy + 3), 2)
+    for _ in range(4):
+        rsx = sx + random.randint(-12, 12)
+        rsy = sy + random.randint(-2, 14)
+        rsize = random.randint(1, 2)
+        pygame.draw.circle(ek, (255, 215, 0), (rsx, rsy), rsize)
+        pygame.draw.circle(ek, (255, 255, 200), (rsx, rsy), rsize, 1)
+    pygame.draw.line(ek, robe_d, (sx - 17, sy + 6), (sx - 20, sy + 16), 1)
+    pygame.draw.line(ek, robe_d, (sx + 17, sy + 6), (sx + 20, sy + 16), 1)
+
+
+def _ciz_etek(sx: float, sy: float, yon: int, iv: pygame.Vector2) -> None:
+    ek = game.ekran
+    robe = (60, 50, 100)
+    robe_d = (45, 35, 80)
+    robe_l = (80, 70, 120)
+    if not game.yr:
+        ba = 0.0
+        syk = -6.0
+        sagk = -6.0
+    elif abs(game.hx) > 1:
+        ba = math.sin(game.sz * 8) * 30 * yon
+        syk = abs(math.sin(game.sz * 8)) * 6
+        sagk = abs(math.cos(game.sz * 8)) * 6
+    else:
+        ba = iv.x * 3
+        syk = iv.x * 0.5
+        sagk = -iv.x * 0.5
+    sol_x = sx - 10 + ba * 0.08
+    sag_x = sx + 1 - ba * 0.08
+    pygame.draw.rect(ek, robe, (sol_x - 3, sy + 22 + syk, 15, 20), border_radius=3)
+    pygame.draw.rect(ek, robe_d, (sol_x - 3, sy + 22 + syk, 15, 20), 1, border_radius=3)
+    pygame.draw.rect(ek, robe, (sag_x - 3, sy + 22 + sagk, 15, 20), border_radius=3)
+    pygame.draw.rect(ek, robe_d, (sag_x - 3, sy + 22 + sagk, 15, 20), 1, border_radius=3)
+    for x_off, y_off in [(sol_x, syk), (sag_x, sagk)]:
+        pygame.draw.line(ek, robe_l, (x_off + 4, sy + 24 + y_off), (x_off + 4, sy + 40 + y_off), 1)
+        pygame.draw.line(ek, robe_d, (x_off + 1, sy + 26 + y_off), (x_off + 8, sy + 28 + y_off), 1)
+    for _ in range(2):
+        rsx = sol_x + random.randint(-1, 8)
+        rsy = sy + 24 + syk + random.randint(0, 14)
+        pygame.draw.circle(ek, (255, 215, 0), (rsx, rsy), 1)
+        rsx = sag_x + random.randint(-1, 8)
+        rsy = sy + 24 + sagk + random.randint(0, 14)
+        pygame.draw.circle(ek, (255, 215, 0), (rsx, rsy), 1)
+    ayak_fizik.guncelle(game.hx, not game.yr, game.yr)
+    for i, (x_off, y_off) in enumerate([(sol_x, syk), (sag_x, sagk)]):
+        if i == 0:
+            fy = ayak_fizik.sol_y
+            fx = ayak_fizik.sol_x
+        else:
+            fy = ayak_fizik.sag_y
+            fx = ayak_fizik.sag_x
+        bot_y = sy + 38 + y_off + fy
+        bot_x = x_off + fx
+        squash = max(0, ayak_fizik.basma_mesafesi - abs(fy) * 0.5)
+        bot_w = 16 + squash * 1.5
+        bot_h = 8 - squash * 0.8
+        pygame.draw.ellipse(ek, (50, 40, 80), (bot_x - bot_w // 2, bot_y, bot_w, max(3, bot_h)))
+        pygame.draw.ellipse(ek, (70, 60, 110), (bot_x - (bot_w - 2) // 2, bot_y + 1, bot_w - 2, max(2, bot_h - 2)))
+        pygame.draw.rect(ek, (40, 30, 70), (bot_x - bot_w // 2, bot_y + bot_h - 3, bot_w, 3), border_radius=1)
+        for si in range(4):
+            taban_x = bot_x - 5 + si * 3 + fx * 0.3
+            pygame.draw.circle(ek, (60, 50, 90), (int(taban_x), int(bot_y + bot_h - 1)), 1)
+        pygame.draw.line(ek, (80, 60, 100), (int(bot_x - 2), int(bot_y + 1)),
+                         (int(bot_x + 2), int(bot_y + 1)), 1)
+        pygame.draw.line(ek, (80, 60, 100), (int(bot_x - 1), int(bot_y + 3)),
+                         (int(bot_x + 1), int(bot_y + 3)), 1)
+
+
+def _ciz_kollar(sx: float, sy: float, yon: int) -> None:
+    """Wizard arms (kept for fallback)."""
+    ek = game.ekran
+    wd_cd = assets.WP_DATA[game.mv].cooldown if game.weapon else 10
+    geri_tepme = (wd_cd - game.shoot_cd) / wd_cd if game.shoot_cd > 0 else 0
+    geri_tepme = max(0.0, min(1.0, geri_tepme))
+    yuruyus = math.sin(game.sz * 8) if abs(game.hx) > 1 else 0
+    kol_yukari = math.sin(game.sz * 6) * 4 if abs(game.hx) > 1 else 0
+    kol_yukari += geri_tepme * 10
+    kol_diz = 0.4 + abs(math.sin(game.sz * 6)) * 0.3 if abs(game.hx) > 1 else 0.2
+    kol_diz += geri_tepme * 0.5
+    robe_l = (80, 70, 120)
+    robe_d = (45, 35, 80)
+    kol_renk = (55, 45, 90)
+    for side in [-1, 1]:
+        shoulder_x = sx + side * 16
+        shoulder_y = sy - 8
+        upper_len = 16
+        forearm_len = 14
+        if game.weapon:
+            raise_a = kol_yukari * side
+            walk_swing = yuruyus * side * 3
+            elbow_a = -0.3 + raise_a * 0.05 + walk_swing * 0.02
+            hand_a = elbow_a + kol_diz
+            elbow_x = shoulder_x + math.cos(elbow_a) * upper_len
+            elbow_y = shoulder_y + math.sin(elbow_a) * upper_len + walk_swing
+            hand_x = elbow_x + math.cos(hand_a) * forearm_len
+            hand_y = elbow_y + math.sin(hand_a) * forearm_len + walk_swing * 0.5
+            pygame.draw.line(ek, robe_d, (int(shoulder_x), int(shoulder_y)),
+                             (int(elbow_x), int(elbow_y)), 7)
+            pygame.draw.line(ek, robe_l, (int(shoulder_x), int(shoulder_y)),
+                             (int(elbow_x), int(elbow_y)), 2)
+            pygame.draw.line(ek, robe_d, (int(elbow_x), int(elbow_y)),
+                             (int(hand_x), int(hand_y)), 6)
+            pygame.draw.line(ek, robe_l, (int(elbow_x), int(elbow_y)),
+                             (int(hand_x), int(hand_y)), 2)
+            pygame.draw.ellipse(ek, kol_renk, (int(elbow_x) - 4, int(elbow_y) - 3, 8, 6))
+            pygame.draw.ellipse(ek, robe_d, (int(hand_x) - 4, int(hand_y) - 3, 8, 6))
+        else:
+            idle_sway = math.sin(game.sz * 1.5 + side * 0.5) * 2
+            walk_swing = yuruyus * side * 4
+            elbow_a = 0.5 + idle_sway * 0.05 + walk_swing * 0.03
+            hand_a = elbow_a + 0.8
+            elbow_x = shoulder_x + math.cos(elbow_a) * upper_len
+            elbow_y = shoulder_y + math.sin(elbow_a) * upper_len + walk_swing
+            hand_x = elbow_x + math.cos(hand_a) * forearm_len
+            hand_y = elbow_y + math.sin(hand_a) * forearm_len + walk_swing * 0.3
+            pygame.draw.line(ek, robe_d, (int(shoulder_x), int(shoulder_y)),
+                             (int(elbow_x), int(elbow_y)), 7)
+            pygame.draw.line(ek, robe_l, (int(shoulder_x), int(shoulder_y)),
+                             (int(elbow_x), int(elbow_y)), 2)
+            pygame.draw.line(ek, robe_d, (int(elbow_x), int(elbow_y)),
+                             (int(hand_x), int(hand_y)), 6)
+            pygame.draw.line(ek, robe_l, (int(elbow_x), int(elbow_y)),
+                             (int(hand_x), int(hand_y)), 2)
+            pygame.draw.ellipse(ek, kol_renk, (int(elbow_x) - 4, int(elbow_y) - 3, 8, 6))
+            pygame.draw.ellipse(ek, robe_d, (int(hand_x) - 4, int(hand_y) - 3, 8, 6))
+    if game.weapon:
+        _ciz_silah(sx, sy, yon)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# MAIN ENTRY POINT
+# ═══════════════════════════════════════════════════════════════════
+def ciz_krk(x: float, y: float, yn: int, yy: float = 0.0) -> None:
+    """Draw the full character at (x, y) facing yn.
+    
+    Uses the animated char.png renderer if available,
+    falls back to the wizard procedural drawing.
     """
     global _onceki_oy, _onceki_yr
 
@@ -425,61 +735,78 @@ def ciz_krk(x: float, y: float, yn: int, yy: float = 0.0) -> None:
     game.gk += 1
     y += yy
     game.sh += (game.hx * 0.3 - game.sh) * 0.15
-    iv = pygame.Vector2(math.sin(game.sz) * 2, math.sin(game.sz * 0.6) * 0.8)
-
-    hizlanma = game.hx * 0.1
-    fizik.guncelle(hizlanma)
 
     yon = 1 if yn >= 0 else -1
     sx = x
     sy = y
 
-    # Draw character layers back-to-front
-    _ciz_kafa(sx, sy)
-    _ciz_gozler(sx, sy)
-    _ciz_govde(sx, sy)
+    # Landing detection
+    if not _onceki_yr and game.yr:
+        ayak_fizik.dusme_hizi = abs(game.hx) * 2 + 3
 
-    # Belt / waist
-    pygame.draw.rect(game.ekran, (240, 235, 225), (sx - 13, sy + 14, 26, 6))
-    pygame.draw.rect(game.ekran, (15, 15, 20), (sx - 11, sy + 18, 22, 5))
-    pygame.draw.rect(game.ekran, (25, 25, 30), (sx - 11, sy + 18, 22, 5), 1)
-    pygame.draw.rect(game.ekran, (180, 180, 180), (sx - 2, sy + 19, 4, 3))
-    pygame.draw.rect(game.ekran, (200, 200, 200), (sx - 1, sy + 20, 2, 1))
+    # ── Render path: char.png based OR wizard fallback ──
+    if _body_surf is not None:
+        _ciz_karakter(sx, sy, yon)
+    elif game.wizard_sprite is not None:
+        _ciz_krk_sprite(sx, sy, yon)
+    else:
+        _ciz_krk_procedural(sx, sy, yon)
 
-    _ciz_memeler(sx, sy)
-    _ciz_pacalar(sx, sy, yon, iv)
-    _ciz_kollar(sx, sy, yon)
-
-    # Wizard sprite overlay
-    _yukle_char()
-    if CHAR:
-        sprite = CHAR
-        if yon < 0:
-            sprite = pygame.transform.flip(CHAR, True, False)
-        game.ekran.blit(sprite, (sx - sprite.get_width() // 2, sy + 25 - sprite.get_height()))
-
-    # Breathing particles
+    # ── Particles ──
     if abs(game.hx) < 0.5 and game.yr and random.random() < 0.04:
-        px = sx + random.randint(-18, 18)
-        py = sy + 10 + random.randint(-20, 5)
+        px2 = sx + random.randint(-18, 18)
+        py2 = sy + 10 + random.randint(-20, 5)
         renk = random.choice([(100, 150, 255), (150, 200, 255), (200, 230, 255)])
-        particles.ptk_ekle(px, py, renk, 1)
+        particles.ptk_ekle(px2, py2, renk, 1)
 
-    # Running dust
     if game.yr and abs(game.hx) > 1.5 and random.random() < 0.12:
         particles.ptk_ekle(sx + random.randint(-6, 6), sy + 22, (180, 180, 200), 2)
 
-    # Landing dust
     if not _onceki_yr and game.yr:
         for _ in range(5):
             particles.ptk_ekle(sx + random.randint(-10, 10), sy + 22, (180, 200, 255), 2)
         particles.ptk_patlatma(sx, sy + 22, (180, 200, 255), 6, 3)
 
-    # Air trail
     if not game.yr and random.random() < 0.06:
         particles.ptk_ekle(sx + random.randint(-8, 8), sy + random.randint(-5, 15), (150, 200, 255), 1)
 
     _onceki_oy = game.oy
     _onceki_yr = game.yr
 
+
+def _ciz_krk_sprite(sx: float, sy: float, yon: int) -> None:
+    """Draw wizard from WİZARD.gif + arms/effects (original)."""
+    ek = game.ekran
+    sprite = game.wizard_sprite
+    if sprite is None:
+        return
+    if yon < 0:
+        sprite = pygame.transform.flip(sprite, True, False)
+    ayak_fizik.guncelle(game.hx, not game.yr, game.yr)
+    idle_bob = math.sin(game.sz * 2) * 2 if abs(game.hx) < 0.5 else 0
+    foot_bounce_l = ayak_fizik.sol_y * 0.5
+    foot_bounce_r = ayak_fizik.sag_y * 0.5
+    foot_shift_l = ayak_fizik.sol_x * 0.3
+    foot_shift_r = ayak_fizik.sag_x * 0.3
+    draw_x = int(sx - sprite.get_width() // 2)
+    draw_y = int(sy - sprite.get_height() + 25 + idle_bob + (foot_bounce_l + foot_bounce_r) * 0.3)
+    ek.blit(sprite, (draw_x, draw_y))
+    _ciz_kollar(sx, sy, yon)
+    _ciz_magic_effect(sx, sy)
+    _ciz_kostum(sx, sy)
+
+
+def _ciz_krk_procedural(sx: float, sy: float, yon: int) -> None:
+    """Draw wizard from primitives (original fallback)."""
+    ek = game.ekran
+    iv = pygame.Vector2(math.sin(game.sz) * 2, math.sin(game.sz * 0.6) * 0.8)
+    hizlanma = game.hx * 0.1
+    _ciz_sapka(sx, sy, yon)
+    _ciz_sac_ve_sakal(sx, sy)
+    _ciz_kafa(sx, sy)
+    _ciz_gozler(sx, sy)
+    _ciz_govde(sx, sy)
+    _ciz_etek(sx, sy, yon, iv)
+    _ciz_kollar(sx, sy, yon)
+    _ciz_magic_effect(sx, sy)
     _ciz_kostum(sx, sy)

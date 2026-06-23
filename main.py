@@ -1,6 +1,9 @@
 import random
 import math
+from pathlib import Path
+
 import pygame
+from PIL import Image
 
 pygame.init()
 pygame.mixer.init(frequency=22050, size=-16, channels=4)
@@ -32,6 +35,26 @@ game.ikonlar = {
 
 _tex_yolu = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "Season_collection.png")
 game.tex_sheet = pygame.image.load(_tex_yolu).convert_alpha()
+
+# ── Character sprite loading (char.png armored character) ─────────
+if player.karakter_yukle():
+    print("Karakter sprite yuklendi (char.png)")
+else:
+    # Fallback: WİZARD.gif
+    _gif_yolu = os.path.join(os.path.dirname(os.path.abspath(__file__)), "WİZARD.gif")
+    if os.path.exists(_gif_yolu):
+        try:
+            _pil_img = Image.open(_gif_yolu).convert("RGBA")
+            _bbox = _pil_img.getbbox()
+            if _bbox:
+                _pil_img = _pil_img.crop(_bbox)
+            _pil_img = _pil_img.resize((84, 147), Image.NEAREST)
+            game.wizard_sprite = pygame.image.fromstring(
+                _pil_img.tobytes(), _pil_img.size, _pil_img.mode
+            ).convert_alpha()
+            print(f"Wizard sprite GIF'ten yuklendi: 84x147")
+        except Exception as e:
+            print(f"Wizard sprite yuklenemedi: {e}")
 
 pygame.display.set_caption("Mevsimler Oyunu")
 game.saat = pygame.time.Clock()
@@ -127,16 +150,16 @@ def _giris_ve_ates() -> None:
     if pygame.mouse.get_pressed()[0] and not _joy_tut and game.weapon and game.ammo > 0 and game.shoot_cd <= 0 and my < YUKSEKLIK - 120 and not (mx > GENISLIK - 250 and my < 55):
         arad = -1 if game.yn < 0 else 1
         wd = WP_DATA[game.mv]
-        shot_spd = wd["spd"]
-        if game.shoot_cd > wd["cd"] - 3:
+        shot_spd = wd.speed
+        if game.shoot_cd > wd.cooldown - 3:
             vy_b = -2
         else:
             vy_b = -1.5 + math.sin(game.sz * 4) * 1.5
-        game.bullets.append({"x": game.ox, "y": game.oy-20, "vx": shot_spd*arad, "vy": vy_b, "r": wd["r"], "dmg": wd["dmg"], "t": wd["s"], "mv": game.mv})
+        game.bullets.append({"x": game.ox, "y": game.oy-20, "vx": shot_spd*arad, "vy": vy_b, "r": wd.color, "dmg": wd.damage, "t": wd.shape, "mv": game.mv})
         game.ammo -= 1
-        game.shoot_cd = wd["cd"]
+        game.shoot_cd = wd.cooldown
         audio.sfx_ates()
-        particles.ptk_patlatma(game.ox + arad*20, game.oy-20, wd["r"], 6, 3)
+        particles.ptk_patlatma(game.ox + arad*20, game.oy-20, wd.color, 6, 3)
         for _ in range(3):
             particles.ptk_ekle(game.ox + arad*20, game.oy-20, (200, 200, 200), 1)
 
@@ -340,9 +363,9 @@ def _nesne_kontrol() -> None:
             if oc.colliderect(pygame.Rect(wpx-8, wpy-8, 16, 16)):
                 game.lvl["wp"].remove(wp)
                 game.weapon = game.mv
-                game.ammo = min(game.max_ammo, game.ammo + WP_DATA[game.mv]["a"])
+                game.ammo = min(game.max_ammo, game.ammo + WP_DATA[game.mv].ammo)
                 audio.sfx_powerup()
-                particles.ptk_patlatma(wpx, wpy, WP_DATA[game.mv]["r"], 12)
+                particles.ptk_patlatma(wpx, wpy, WP_DATA[game.mv].color, 12)
 
     # Sinirlar
     if game.ox < 14: game.ox = 14
@@ -716,7 +739,7 @@ def _ciz_nesneler() -> None:
     if game.lvl and isinstance(game.lvl, dict):
         for wp in game.lvl.get("wp", []):
             wpx, wpy = wp
-            wr = WP_DATA[game.mv]["r"]
+            wr = WP_DATA[game.mv].color
             pygame.draw.rect(game.ekran, wr, (wpx-6, wpy-4, 12, 8))
             pygame.draw.rect(game.ekran, B, (wpx-6, wpy-4, 12, 8), 1)
 
@@ -797,8 +820,8 @@ def _ciz_hud() -> None:
 
     # Silah
     if game.weapon:
-        wr = WP_DATA[game.mv]["r"]
-        wname = WP_DATA[game.mv]["i"]
+        wr = WP_DATA[game.mv].color
+        wname = WP_DATA[game.mv].name
         pygame.draw.rect(game.ekran, (20,20,30), (10, 40, 200, 30))
         game.ekran.blit(game.fk.render(f"{wname}: {game.ammo}", True, wr), (15, 45))
 

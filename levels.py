@@ -11,6 +11,7 @@ import pygame
 
 import animations
 import assets
+import config
 import game
 
 
@@ -738,6 +739,6 @@ def boss_ciz() -> None:
     ratio = game.boss_hp / game.boss_max_hp
     pygame.draw.rect(game.ekran, glow, (bbx, bby, int(bbw * ratio), 18))
     pygame.draw.rect(game.ekran, assets.B, (bbx, bby, bbw, 18), 2)
-    bn = assets.BOSS_ADI.get(game.mv, "BOSS")
+    bn = config.BOSS_ADI.get(game.mv, "BOSS")
     game.ekran.blit(game.fk.render(bn, True, assets.B), (bbx + 5, bby - 16))
     game.ekran.blit(game.fk.render(f"{game.boss_hp}/{game.boss_max_hp}", True, assets.B), (bbx + bbw - 60, bby + 1))

@@ -136,6 +136,9 @@ aktif_k: Optional[str] = None
 ikonlar: dict[str, Any] = {}
 boss_zorluk: Optional[int] = None
 
+# ── Wizard sprite (loaded from WİZARD.gif) ──────────────────────
+wizard_sprite: Optional[pygame.Surface] = None
+
 # ── Texture atlas ────────────────────────────────────────────────
 tex_sheet: Optional[pygame.Surface] = None
 TEXTURE_MAP: dict[str, dict[str, tuple[int, int]]] = {
