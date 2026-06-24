@@ -1,0 +1,16 @@
+{
+  "si": 0,
+  "mv": "ilkbahar",
+  "rnd": 1,
+  "puan": 145,
+  "envanter": [],
+  "aktif_k": null,
+  "yuksek_puan": {},
+  "ayar": {
+    "z": "orta",
+    "te": false,
+    "ses": 50,
+    "lobi_ses": 50
+  },
+  "ses_pos": -0.001
+}
